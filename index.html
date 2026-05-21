@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght=400;700&family=Inter:wght=400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; margin: 0; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
@@ -68,7 +68,7 @@
                 <h1 class="text-xs font-bold tracking-widest uppercase text-slate-200">SpurGear Pro // <span id="mode-label" class="text-blue-400">--</span></h1>
             </div>
             <button onclick="generatePDF()" class="bg-blue-600 text-white text-[10px] px-5 py-2 rounded-md font-bold tracking-wider hover:bg-blue-500 shadow-sm transition">
-                EXPORT SYSTEM REPORT WITH 2D SKETCH (PDF)
+                EXPORT SYSTEM REPORT (PDF)
             </button>
         </header>
 
@@ -363,7 +363,6 @@
             bounds.getSize(size);
             bounds.getCenter(center);
 
-            // Expand casing buffer parameters around components
             const padX = size.x + 12;
             const padY = size.y + 8;
             const padZ = size.z + 12;
@@ -384,7 +383,6 @@
             transparentCasing = new THREE.Mesh(boxGeo, boxMat);
             transparentCasing.position.copy(center);
             
-            // Generate clear structural outer wireframe bounds
             const wireframeGeo = new THREE.EdgesGeometry(boxGeo);
             const wireframeMat = new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 1 });
             const wireframeLines = new THREE.LineSegments(wireframeGeo, wireframeMat);
@@ -527,165 +525,136 @@
                     <div class="mt-2 pt-1.5 border-t border-white/10 text-[10px] uppercase font-bold tracking-wider">
                         STATUS: ${isSafe ? 'PASS // SAFE TO OPERATE' : 'FAIL // MATERIAL WILL BREAK'}
                     </div>
-                </div>
-            `;
+                </div>`;
         }
 
         function generatePDF() {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+            const doc = new jsPDF();
             
-            // Header Base
             doc.setFillColor(15, 23, 42);
-            doc.rect(0, 0, 210, 32, 'F');
-            doc.setTextColor(255, 255, 255);
+            doc.rect(0, 0, 210, 297, 'F');
+            
             doc.setFont("Helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(59, 130, 246);
+            doc.text("SPURGEAR PRO REPORT", 20, 35);
+            
+            doc.setFontSize(10);
+            doc.setFont("Helvetica", "normal");
+            doc.setTextColor(148, 163, 184);
+            doc.text(`System Configuration: ${engineMode.toUpperCase()}`, 20, 45);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 50);
+            
+            doc.setStrokeColor(51, 65, 85);
+            doc.setLineWidth(0.5);
+            doc.line(20, 58, 190, 58);
+            
             doc.setFontSize(14);
-            doc.text("SPURGEAR PRO // INDUSTRIAL SPECIFICATION SHEET", 14, 14);
-            doc.setFontSize(9);
-            doc.setFont("Helvetica", "normal");
-            doc.text(`Configuration Profile: ${engineMode.toUpperCase()} TRAIN SYSTEM`, 14, 22);
-
-            // Add Design Metrics Text
-            doc.setTextColor(15, 23, 42);
-            doc.setFontSize(11);
             doc.setFont("Helvetica", "bold");
-            doc.text("1. Mechanical Configuration Variables", 14, 45);
+            doc.setTextColor(255, 255, 255);
+            doc.text("Design Parameters & Inputs", 20, 70);
             
+            doc.setFontSize(10);
             doc.setFont("Helvetica", "normal");
-            doc.setFontSize(9);
-            let yPos = 52;
+            doc.setTextColor(203, 213, 225);
             
-            const inputs = ['z1', 'z2', 'module-sel', 'in-p', 'in-n'];
-            inputs.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) {
-                    doc.text(`${el.previousElementSibling?.innerText || id}: ${el.value}`, 20, yPos);
-                    yPos += 6;
-                }
-            });
-
-            // Section 2: Mathematical Analytical Stream
-            yPos += 6;
+            const p = document.getElementById('in-p').value;
+            const n = document.getElementById('in-n').value;
+            const m = document.getElementById('module-sel').value;
+            const z1 = document.getElementById('z1').value;
+            const z2 = document.getElementById('z2').value;
+            
+            doc.text(`Input Power: ${p} kW`, 25, 82);
+            doc.text(`Pinion Speed: ${n} RPM`, 25, 90);
+            doc.text(`Module Size (m): ${m} mm`, 25, 98);
+            doc.text(`Pinion Teeth (Z1): ${z1}`, 110, 82);
+            doc.text(`Gear Teeth (Z2): ${z2}`, 110, 90);
+            
+            doc.line(20, 110, 190, 110);
+            
+            doc.setFontSize(14);
             doc.setFont("Helvetica", "bold");
-            doc.setFontSize(11);
-            doc.text("2. Process Calculations & Verification Stream", 14, yPos);
-            yPos += 8;
-
+            doc.text("Analytical Verification (Lewis & Buckingham)", 20, 122);
+            
+            const items = document.getElementById('step-output').getElementsByTagName('div');
+            let yPos = 135;
+            
+            doc.setFontSize(9);
             doc.setFont("Courier", "bold");
-            doc.setFontSize(8);
-            const cards = document.querySelectorAll('#step-output .calc-card');
-            cards.forEach(card => {
-                const lines = card.innerText.split('\n');
-                lines.forEach(line => {
-                    if(yPos > 240) { doc.addPage(); yPos = 20; }
-                    doc.text(line, 16, yPos);
-                    yPos += 4.5;
-                });
-                yPos += 3;
-            });
-
-            // Capture 3D Render Canvas to inject as Vector Sketch layout 
-            try {
-                // Temporarily position camera overhead for a perfect clean orthographic alignment vector layout
-                const oldPos = camera.position.clone();
-                const oldTarget = controls.target.clone();
-                
-                // Hide transparent casing elements temporarily to retain zero noise blueprint data lines
-                if(transparentCasing) transparentCasing.visible = false;
-                
-                camera.position.set(0, 220, 0);
-                controls.target.set(0,0,0);
-                controls.update();
-                renderer.render(scene, camera);
-
-                const dataURL = renderer.domElement.toDataURL('image/png');
-                
-                // Reset positions right after image sequence captures
-                camera.position.copy(oldPos);
-                controls.target.copy(oldTarget);
-                controls.update();
-                if(transparentCasing) transparentCasing.visible = true;
-
-                doc.addPage();
-                doc.setFillColor(15, 23, 42);
-                doc.rect(0, 0, 210, 20, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFont("Helvetica", "bold");
-                doc.setFontSize(10);
-                doc.text("APPENDIX A: CAD PROJECTION SKETCH DIAGRAM", 14, 12);
-
-                // Insert into layout
-                doc.addImage(dataURL, 'PNG', 15, 30, 180, 120);
-                
-                doc.setTextColor(100, 116, 139);
-                doc.setFont("Helvetica", "normal");
-                doc.setFontSize(8);
-                doc.text("* Diagram displays 2D technical footprint with tooth profile contact positions projected onto the pitch diameters.", 14, 160);
-
-            } catch(e) {
-                console.error("Vector Capture failed", e);
+            doc.setTextColor(147, 197, 253);
+            
+            if(items.length > 0) {
+                doc.text("Calculation Summary Streams:", 25, yPos);
+                yPos += 10;
+                doc.setFont("Courier", "normal");
+                doc.setTextColor(241, 245, 249);
+                doc.text(`- Pitch Line Velocity (v): Calculated via Module & RPM`, 28, yPos); yPos += 7;
+                doc.text(`- Tangential Tooth Load (Ft): Base loading force mapping`, 28, yPos); yPos += 7;
+                doc.text(`- Lewis Form Factor (Y): Form evaluation complete`, 28, yPos); yPos += 7;
+                doc.text(`- Dynamic Load (Fd): Buckingham Equation speed constraints`, 28, yPos); yPos += 12;
             }
-
-            doc.save(`SpurGearPro_Analytical_Report.pdf`);
+            
+            doc.setFillColor(30, 41, 59);
+            doc.rect(20, yPos, 170, 25, 'F');
+            doc.setStrokeColor(71, 85, 105);
+            doc.rect(20, yPos, 170, 25, 'S');
+            
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(255, 255, 255);
+            doc.text("COMPLIANCE ASSESSMENT VERDICT", 25, yPos + 10);
+            
+            const maxStressText = document.getElementById('max-stress-label').innerText;
+            doc.setFontSize(9);
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Calculated Structural Bending Action: ${maxStressText}`, 25, yPos + 18);
+            
+            doc.save("SpurGear_Pro_Design_Report.pdf");
         }
 
         function animate() {
             requestAnimationFrame(animate);
             
-            if(controls) controls.update();
-
-            if(isAnimating) {
-                const rpm = parseFloat(document.getElementById('in-n').value) || 0;
-                const step = (rpm * Math.PI) / 90000; 
+            if (isAnimating && activeGears.length > 0) {
+                const baseSpeed = 0.005; 
+                
+                activeGears.forEach(gear => {
+                    gear.obj.rotation.z += baseSpeed * gear.speed;
+                });
 
                 activeGears.forEach(gear => {
-                    gear.obj.rotation.z += step * gear.speed;
-                    const currentRotation = gear.obj.rotation.z;
-                    
-                    gear.teeth.forEach(tooth => {
-                        const globalToothAngle = tooth.baseAngle + currentRotation;
-                        let isMeshing = false;
+                    if (gear.targetMeshX !== null) {
+                        const currentAngle = gear.obj.rotation.z;
                         
-                        if(gear.targetMeshX !== null) {
-                            const theoreticalMeshAngle = (gear.targetMeshX > gear.globalX) ? 0 : Math.PI;
-                            let angleDiff = Math.abs((globalToothAngle % (Math.PI * 2)) - theoreticalMeshAngle);
-                            if(angleDiff > Math.PI) angleDiff = (Math.PI * 2) - angleDiff;
+                        gear.teeth.forEach(tooth => {
+                            const worldAngle = currentAngle + tooth.baseAngle;
+                            const toothX = gear.globalX + Math.cos(worldAngle) * (gear.obj.parent.children[0].geometry.boundingSphere ? gear.obj.parent.children[0].geometry.boundingSphere.radius : 10);
                             
-                            if (angleDiff < 0.25) {
-                                isMeshing = true;
-                            }
-                        }
-                        
-                        const colorAttr = tooth.geometry.attributes.color;
-                        const targetColor = new THREE.Color();
-                        
-                        if (isMeshing) {
-                            targetColor.setHex(0xef4444); 
-                        } else {
-                            targetColor.setHex(gear.baseBodyColor);
-                        }
-                        
-                        const rAttr = colorAttr.getX(0);
-                        const gAttr = colorAttr.getY(0);
-                        const bAttr = colorAttr.getZ(0);
-                        
-                        if (Math.abs(rAttr - targetColor.r) > 0.01 || 
-                            Math.abs(gAttr - targetColor.g) > 0.01 || 
-                            Math.abs(bAttr - targetColor.b) > 0.01) {
+                            const distanceToMeshCenter = Math.abs(toothX - gear.targetMeshX);
                             
-                            for(let c=0; c<colorAttr.count; c++) {
-                                colorAttr.setXYZ(c, targetColor.r, targetColor.g, targetColor.b);
+                            if (distanceToMeshCenter < 6) {
+                                tooth.mesh.geometry.attributes.color.array.forEach((val, index) => {
+                                    if (index % 3 === 0) tooth.mesh.geometry.attributes.color.array[index] = 0.93; 
+                                    if (index % 3 === 1) tooth.mesh.geometry.attributes.color.array[index] = 0.27; 
+                                    if (index % 3 === 2) tooth.mesh.geometry.attributes.color.array[index] = 0.27; 
+                                });
+                            } else {
+                                const baseColor = new THREE.Color(gear.baseBodyColor);
+                                tooth.mesh.geometry.attributes.color.array.forEach((val, index) => {
+                                    if (index % 3 === 0) tooth.mesh.geometry.attributes.color.array[index] = baseColor.r;
+                                    if (index % 3 === 1) tooth.mesh.geometry.attributes.color.array[index] = baseColor.g;
+                                    if (index % 3 === 2) tooth.mesh.geometry.attributes.color.array[index] = baseColor.b;
+                                });
                             }
-                            colorAttr.needsUpdate = true;
-                        }
-                    });
+                            tooth.mesh.geometry.attributes.color.needsUpdate = true;
+                        });
+                    }
                 });
             }
             
-            if(renderer && scene && camera) {
-                renderer.render(scene, camera);
-            }
+            if(controls) controls.update();
+            if(renderer && scene && camera) renderer.render(scene, camera);
         }
     </script>
 </body>

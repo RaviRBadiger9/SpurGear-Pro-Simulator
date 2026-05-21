@@ -14,7 +14,8 @@
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1e293b; margin: 0; overflow: hidden; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(0, 0, 0, 0.05); }
-        input, select { background: #ffffff !important; border: 1px solid #cbd5e1 !important; color: #334155 !important; padding: 0.4rem; font-size: 0.7rem; border-radius: 6px; width: 100%; }
+        input, select { background: #ffffff !important; border: 1px solid #cbd5e1 !important; color: #334155 !important; padding: 0.4rem; font-size: 0.7rem; border-radius: 6px; width: 100%; transition: border-color 0.2s; }
+        input:focus, select:focus { border-color: #3b82f6 !important; outline: none; }
         #splash-screen { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: center; justify-content: center; }
         .option-card { background: white; padding: 2.5rem 2rem; border-radius: 12px; width: 320px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .option-card:hover { transform: translateY(-4px); border-color: #3b82f6; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
@@ -59,7 +60,7 @@
     <div id="main-engine" class="h-screen flex flex-col hidden">
         <header class="h-14 glass flex items-center justify-between px-8 border-b border-slate-200 z-20">
             <div class="flex items-center gap-4">
-                <button onclick="location.reload()" class="text-[10px] font-bold tracking-wider bg-slate-100 border border-slate-200 px-3 py-1.5 rounded transition hover:bg-slate-200">← SYSTEM DISCONNECT</button>
+                <button onclick="location.reload()" class="text-[10px] font-bold tracking-wider bg-slate-100 border border-slate-200 px-3 py-1.5 rounded transition hover:bg-slate-200">← SYSTEM MENU</button>
                 <div class="h-4 w-[1px] bg-slate-300"></div>
                 <h1 class="text-xs font-bold tracking-widest uppercase text-slate-800">SpurGear Pro // <span id="mode-label" class="text-blue-600">--</span></h1>
             </div>
@@ -185,12 +186,12 @@
         let activeGears = []; 
         let isAnimating = true;
 
-        // Structured Color Theme Matrix for distinct identity visualization
+        // Colors explicitly selected for distinction between the gear ranks
         const structuralPalette = {
-            pinion: 0x3b82f6,    // Professional Electric Blue
-            driven: 0x10b981,    // Emerald Corporate Green
-            inter: 0xf59e0b,     // Technical Safety Amber
-            output: 0x8b5cf6     // Structural Indigo
+            pinion: 0x3b82f6,    // Electric Blue
+            driven: 0x10b981,    // Green
+            inter: 0xf59e0b,     // Amber/Orange
+            output: 0x8b5cf6     // Purple
         };
 
         const serviceFactorTable = {
@@ -231,7 +232,7 @@
             camera = new THREE.PerspectiveCamera(38, area.clientWidth / area.clientHeight, 1, 2000);
             camera.position.set(160, 180, 160);
             
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(area.clientWidth, area.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             area.appendChild(renderer.domElement);
@@ -244,10 +245,6 @@
             const sun1 = new THREE.DirectionalLight(0xffffff, 0.4);
             sun1.position.set(20, 40, 20);
             scene.add(sun1);
-            
-            const sun2 = new THREE.DirectionalLight(0xffffff, 0.2);
-            sun2.position.set(-20, 20, -20);
-            scene.add(sun2);
 
             gearGroup = new THREE.Group();
             scene.add(gearGroup);
@@ -268,8 +265,8 @@
             const colors = [];
             
             const baseColor = new THREE.Color(baseHexColor);
-            const stressColor = new THREE.Color(0xef4444); // Consistent industrial warning indicator
-            const intermediateColor = new THREE.Color(0xeab308); // Yield threshold accent
+            const stressColor = new THREE.Color(0xef4444); 
+            const intermediateColor = new THREE.Color(0xeab308); 
 
             for (let i = 0; i < positions.count; i++) {
                 const y = positions.getY(i);
@@ -359,13 +356,13 @@
             while(gearGroup.children.length > 0) gearGroup.remove(gearGroup.children[0]);
             activeGears = [];
             
-            const z1 = parseInt(document.getElementById('z1').value) || 1;
-            const z2 = parseInt(document.getElementById('z2').value) || 1;
-            const z3 = parseInt(document.getElementById('z3').value) || 1;
-            const z4 = parseInt(document.getElementById('z4').value) || 1;
+            const z1 = Math.max(1, parseInt(document.getElementById('z1').value) || 1);
+            const z2 = Math.max(1, parseInt(document.getElementById('z2').value) || 1);
+            const z3 = Math.max(1, parseInt(document.getElementById('z3').value) || 1);
+            const z4 = Math.max(1, parseInt(document.getElementById('z4').value) || 1);
             const m = parseFloat(document.getElementById('module-sel').value);
-            const p = parseFloat(document.getElementById('in-p').value);
-            const n1 = parseFloat(document.getElementById('in-n').value);
+            const p = parseFloat(document.getElementById('in-p').value) || 0;
+            const n1 = parseFloat(document.getElementById('in-n').value) || 1;
             const toothType = document.getElementById('tooth-system').value;
             const errorVal = document.getElementById('gear-error').value;
             const matPair = document.getElementById('mat-pair').value;
@@ -423,7 +420,7 @@
                     Lewis Strength (Fs): <span class="font-bold">${fs.toFixed(1)} N</span><br>
                     Dynamic Load (Fd): <span class="font-bold">${fd.toFixed(1)} N</span><br>
                     <div class="mt-2 pt-1.5 border-t text-[10px] uppercase font-bold tracking-wider">
-                        Verification: ${fs > fd ? 'PASS // SAFE' : 'CRITICAL CRITERIA FAILURE'}
+                        Verification: ${fs > fd ? 'PASS // SAFE' : 'CRITICAL INSTABILITY'}
                     </div>
                 </div>
             `;
@@ -432,27 +429,24 @@
         function generatePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
             const timestamp = new Date().toLocaleString();
             
-            // Header configuration
             doc.setFillColor(30, 41, 59);
             doc.rect(0, 0, 210, 35, 'F');
             
             doc.setTextColor(255, 255, 255);
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(20);
-            doc.text("SPURGEAR PRO // METRIC REPORT", 14, 18);
+            doc.text("SPURGEAR PRO // ANALYSIS REPORT", 14, 18);
             
             doc.setFont("Helvetica", "normal");
             doc.setFontSize(8);
-            doc.text(`STRUCTURAL COMPLIANCE ENGINE CRITERIA: IS:2535 | GENERATED: ${timestamp}`, 14, 26);
+            doc.text(`CRITERIA: IS:2535 PROTOCOL SPECIFICATION | GENERATED: ${timestamp}`, 14, 26);
             
-            // Document metrics grouping
             doc.setTextColor(30, 41, 59);
             doc.setFontSize(11);
             doc.setFont("Helvetica", "bold");
-            doc.text("1. SYSTEM BOUNDARY VARIABLES", 14, 50);
+            doc.text("1. DESIGNS MATRIX AND INPUTS", 14, 50);
             
             doc.setLineWidth(0.3);
             doc.setDrawColor(203, 213, 225);
@@ -467,10 +461,9 @@
             
             doc.text(`Base Allowable Stress (sigma0): ${sigma0} MPa`, 16, 62);
             doc.text(`Transmitted Sizing Module (m): ${m} mm`, 16, 68);
-            doc.text(`Operating Profile Velocity Power: ${power} kW`, 16, 74);
-            doc.text(`Primary Driver Velocity Vector (n1): ${speed} RPM`, 16, 80);
+            doc.text(`Operating Power Velocity: ${power} kW`, 16, 74);
+            doc.text(`Primary Speed Vector (n1): ${speed} RPM`, 16, 80);
 
-            // Calculation Results
             doc.setFontSize(11);
             doc.setFont("Helvetica", "bold");
             doc.text("2. COMPONENT METRIC ANALYTICS", 14, 98);
@@ -479,8 +472,8 @@
             doc.setFont("Helvetica", "normal");
             doc.setFontSize(9);
             
-            const z1 = document.getElementById('z1').value;
-            const z2 = document.getElementById('z2').value;
+            const z1 = parseInt(document.getElementById('z1').value) || 1;
+            const z2 = parseInt(document.getElementById('z2').value) || 1;
             const d1 = z1 * m;
             const v = (Math.PI * d1 * speed) / 60000;
             const cs = serviceFactorTable[document.getElementById('load-type').value][document.getElementById('service-type').value];
@@ -500,7 +493,6 @@
             doc.text(`Calculated Tangential Unit Load (Ft): ${ft.toFixed(1)} N`, 16, 116);
             doc.text(`Corrected Service Dynamic Load (Ft-eff): ${ftEff.toFixed(1)} N`, 16, 122);
             
-            // Structural Assessment Area
             doc.setFontSize(11);
             doc.setFont("Helvetica", "bold");
             doc.text("3. STRUCTURAL VERIFICATION PROTOCOL", 14, 140);
@@ -511,22 +503,20 @@
             doc.text(`Structural Ultimate Lewis Strength Allowance (Fs): ${fs.toFixed(1)} N`, 16, 152);
             doc.text(`Bucker Dynamic Stress Coefficient Value (Fd): ${fd.toFixed(1)} N`, 16, 158);
             
-            // Safety Banner Accent Box
-            const isSafe = fs > fd;
-            if (isSafe) {
+            if (fs > fd) {
                 doc.setFillColor(240, 253, 250);
                 doc.setDrawColor(16, 185, 129);
                 doc.rect(14, 170, 182, 16, 'DF');
                 doc.setTextColor(4, 120, 87);
                 doc.setFont("Helvetica", "bold");
-                doc.text("VERIFICATION STATE: STABLE SAFETY OVERRIDE ACCORDING TO CRITERIA", 22, 180);
+                doc.text("VERIFICATION STATE: STABLE SAFETY CONFIGURATION", 22, 180);
             } else {
                 doc.setFillColor(254, 242, 242);
                 doc.setDrawColor(239, 68, 68);
                 doc.rect(14, 170, 182, 16, 'DF');
                 doc.setTextColor(185, 28, 28);
                 doc.setFont("Helvetica", "bold");
-                doc.text("VERIFICATION STATE: CRITICAL INSTABILITY / OVERLOAD RE-MODULE MANDATORY", 22, 180);
+                doc.text("VERIFICATION STATE: FAILURE / RE-OPTIMIZATION REQUIRED", 22, 180);
             }
             
             doc.save(`SpurGear_Analytical_Report_${engineMode}.pdf`);

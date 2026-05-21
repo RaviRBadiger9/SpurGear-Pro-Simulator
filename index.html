@@ -91,7 +91,7 @@
 
             <!-- Parameters Sidebar (Left) -->
             <aside class="w-80 glass border-r border-slate-800 p-5 space-y-4 overflow-y-auto z-10 shadow-sm">
-                <h2 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Design Constrains</h2>
+                <h2 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Design Constraints</h2>
                 
                 <section>
                     <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Material Stress Boundary ($\sigma_o$)</label>
@@ -177,7 +177,7 @@
             </aside>
 
             <!-- 3D Render Area -->
-            <main class="flex-1 relative bg-[#0b0f19]">
+            <main class="flex-1 relative bg-[#1e293b]">
                 <div id="render-area" class="w-full h-full"></div>
             </main>
 
@@ -213,7 +213,6 @@
             "20stub": { "ST_ST": { "0.01": 118, "0.03": 356, "0.06": 712 }, "CI_CI": { "0.01": 59, "0.03": 178, "0.06": 356 } }
         };
 
-        // Fallback array mapping if specific pairing missing
         dynamicFactorC["14.5"]["CI_ST"] = dynamicFactorC["14.5"]["CI_CI"];
         dynamicFactorC["20"]["CI_ST"] = dynamicFactorC["20"]["CI_CI"];
         dynamicFactorC["20stub"]["CI_ST"] = dynamicFactorC["20stub"]["CI_CI"];
@@ -240,7 +239,7 @@
         function init() {
             const area = document.getElementById('render-area');
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x090d16);
+            scene.background = new THREE.Color(0x1e293b); // High contrast background color update
             
             camera = new THREE.PerspectiveCamera(38, area.clientWidth / area.clientHeight, 1, 2000);
             camera.position.set(130, 140, 130);
@@ -254,12 +253,12 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.15));
-            const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.9);
             mainLight.position.set(50, 100, 50);
             scene.add(mainLight);
 
-            const fillLight = new THREE.DirectionalLight(0x3b82f6, 0.4);
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
             fillLight.position.set(-50, -50, -50);
             scene.add(fillLight);
 
@@ -301,15 +300,15 @@
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
             return new THREE.MeshStandardMaterial({ 
                 vertexColors: true, 
-                metalness: 0.6, 
-                roughness: 0.2
+                metalness: 0.5, 
+                roughness: 0.25
             });
         }
 
         function createGearMesh(z, m, x, baseHexColor, yOffset = 0, zOffset = 0, speedFactor = 1, initialOffset = 0, stressValue = 1) {
             const r_pitch = (z * m) / 2;
             const r_dedendum = r_pitch - 1.25 * m;
-            const thickness = 10 * m; // Face width linked to industrial standards (10*m)
+            const thickness = 10 * m; 
             const gearContainer = new THREE.Group(); 
             const gearShape = new THREE.Shape();
             
@@ -386,38 +385,29 @@
             const cs = serviceFactorTable[document.getElementById('load-type').value][document.getElementById('service-type').value];
             const C = dynamicFactorC[toothType][matPair][errorVal];
 
-            // Real Industrial Torque Calculation Matrix: T = (kW * 60,000) / (2 * pi * N)
             const torque = (p * 60000) / (2 * Math.PI * n1); 
             const d1 = z1 * m, d2 = z2 * m, b = 10 * m;
             const gearRatio = z2 / z1;
-            const v = (Math.PI * d1 * n1) / 60000; // Pitch line velocity
+            const v = (Math.PI * d1 * n1) / 60000;
             
-            // Lewis Form Factor calculations (Y)
             const getY = (z) => (toothType === "20") ? 0.154 - (0.912/z) : (toothType === "20stub" ? 0.175 - (0.841/z) : 0.124 - (0.684/z));
             const y1 = getY(z1), y2 = getY(z2);
             
-            // Critical Identification check: determine the weaker element between pinion & gear
             const strengthPinion = sigma0 * y1;
             const strengthGear = sigma0 * y2;
             const criticalMember = (strengthPinion <= strengthGear) ? "Pinion (Weaker)" : "Gear (Weaker)";
             const designY = (strengthPinion <= strengthGear) ? y1 : y2;
 
-            // Transmitted Forces calculation
             const ft = (v > 0) ? (1000 * p) / v : 0;
             const ftEff = ft * cs;
             
-            // Industrial Beam Strength (Lewis Equation): Fs = sigma0 * b * pi * m * Y
             const fs = sigma0 * b * Math.PI * m * designY;
-            
-            // Barth/Bucker Dynamic increment model implementation
-            const kv = (v > 0) ? (3 / (3 + v)) : 1; 
             const fd = ftEff + ((21 * v * (b * C + ftEff)) / (21 * v + Math.sqrt(b * C + ftEff)));
 
             const bendingStress = (b > 0 && m > 0 && designY > 0) ? (ftEff / (b * m * designY)) : 0;
             const stressVisualFactor = Math.min(2.5, bendingStress / sigma0);
             document.getElementById('max-stress-label').innerText = bendingStress.toFixed(1) + " MPa";
 
-            // Generation parameters routing for 3D Viewport
             if(engineMode === 'single') {
                 gearGroup.add(createGearMesh(z1, m, 0, structuralPalette.pinion, 0, 0, 1, 0, stressVisualFactor));
                 gearGroup.add(createGearMesh(z2, m, (d1 + d2)/2, structuralPalette.driven, 0, 0, -1/gearRatio, Math.PI/z2, stressVisualFactor));

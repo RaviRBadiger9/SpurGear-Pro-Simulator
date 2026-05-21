@@ -11,7 +11,7 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; margin: 0; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; margin: 0; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
         input, select { background: #1e293b !important; border: 1px solid #475569 !important; color: #f8fafc !important; padding: 0.4rem; font-size: 0.75rem; border-radius: 6px; width: 100%; transition: border-color 0.2s; }
@@ -39,7 +39,7 @@
     <div id="splash-screen">
         <div class="max-w-5xl w-full px-8 text-center">
             <h2 class="text-white text-4xl font-bold mb-2 tracking-tight">SpurGear Pro</h2>
-            <p class="text-slate-400 text-sm mb-12">Simple Mathematics & Mesh Contact Stress Solver</p>
+            <p class="text-slate-400 text-sm mb-12">Mathematical & Transparent Contact Stress Solver</p>
             <div class="flex flex-wrap justify-center gap-6">
                 <div class="option-card text-left" onclick="launchEngine('single')">
                     <span class="text-[10px] bg-blue-500/10 text-blue-400 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Standard</span>
@@ -60,19 +60,19 @@
         </div>
     </div>
 
-    <div id="main-engine" class="h-screen flex flex-col hidden">
-        <header class="h-14 glass flex items-center justify-between px-8 border-b border-slate-800 z-20">
+    <div id="main-engine" class="min-h-screen flex flex-col hidden">
+        <header class="h-14 glass flex items-center justify-between px-8 border-b border-slate-800 sticky top-0 z-20">
             <div class="flex items-center gap-4">
                 <button onclick="location.reload()" class="text-[10px] font-bold tracking-wider bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded transition hover:bg-slate-700">← MAIN MENU</button>
                 <div class="h-4 w-[1px] bg-slate-700"></div>
                 <h1 class="text-xs font-bold tracking-widest uppercase text-slate-200">SpurGear Pro // <span id="mode-label" class="text-blue-400">--</span></h1>
             </div>
             <button onclick="generatePDF()" class="bg-blue-600 text-white text-[10px] px-5 py-2 rounded-md font-bold tracking-wider hover:bg-blue-500 shadow-sm transition">
-                EXPORT SYSTEM REPORT (PDF)
+                EXPORT SYSTEM REPORT WITH 2D SKETCH (PDF)
             </button>
         </header>
 
-        <div class="flex-1 flex overflow-hidden relative">
+        <div class="flex-1 flex flex-col lg:flex-row overflow-visible relative">
             <div id="anim-toggle">
                 <button id="toggleBtn" onclick="toggleAnimation()" class="bg-slate-800 text-slate-200 border border-slate-700 text-[10px] tracking-wider px-6 py-2.5 rounded-full font-bold shadow-lg hover:bg-blue-600 hover:text-white transition-all">
                     DRIVE MOTOR: ENGAGED
@@ -86,11 +86,11 @@
                     <span>Base Body Color</span>
                     <span id="max-stress-label">Max Stress</span>
                 </div>
-                <div class="mt-2 pt-1.5 border-t border-slate-800 text-[8px] text-slate-500">Body Color: Fixed ID Color</div>
+                <div class="mt-2 pt-1.5 border-t border-slate-800 text-[8px] text-slate-500">Casing: Clear Acrylic</div>
             </div>
 
             <!-- Parameters Sidebar (Left) -->
-            <aside class="w-80 glass border-r border-slate-800 p-5 space-y-4 overflow-y-auto z-10 shadow-sm">
+            <aside class="w-full lg:w-80 glass border-b lg:border-b-0 lg:border-r border-slate-800 p-5 space-y-4 h-auto lg:h-[calc(100vh-3.5rem)] lg:sticky lg:top-14 overflow-y-auto z-10 shadow-sm">
                 <h2 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Design Constraints</h2>
                 
                 <section>
@@ -177,31 +177,31 @@
             </aside>
 
             <!-- 3D Render Area -->
-            <main class="flex-1 relative bg-[#1e293b]">
+            <main class="flex-1 min-h-[450px] lg:h-[calc(100vh-3.5rem)] bg-[#1e293b] relative">
                 <div id="render-area" class="w-full h-full"></div>
             </main>
 
             <!-- Analytics Output Panel (Right) -->
-            <aside id="data-panel" class="w-[540px] glass border-l border-slate-800 p-5 overflow-hidden flex flex-col z-10 shadow-sm">
+            <aside id="data-panel" class="w-full lg:w-[540px] glass border-t lg:border-t-0 lg:border-l border-slate-800 p-5 h-auto lg:h-[calc(100vh-3.5rem)] lg:sticky lg:top-14 flex flex-col overflow-hidden shadow-sm">
                 <h2 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex-shrink-0">
                     Step-by-Step Simple Math Breakdown
                 </h2>
-                <!-- Scroll Container for Calculations -->
+                <!-- Calculation Stream -->
                 <div id="step-output" class="text-[11px] mono space-y-4 mt-3 overflow-y-auto flex-1 pr-1"></div>
             </aside>
         </div>
     </div>
 
     <script>
-        let scene, camera, renderer, controls, gearGroup, engineMode;
+        let scene, camera, renderer, controls, gearGroup, engineMode, transparentCasing;
         let activeGears = []; 
         let isAnimating = true;
 
         const structuralPalette = {
-            pinion: 0x1e40af,    // Deep Matte Industrial Blue Body
-            driven: 0x065f46,    // Deep Matte Emerald Green Body
-            inter: 0xb45309,     // Deep Amber Body
-            output: 0x6d28d9     // Deep Purple Body
+            pinion: 0x1e40af,    
+            driven: 0x065f46,    
+            inter: 0xb45309,     
+            output: 0x6d28d9     
         };
 
         const serviceFactorTable = {
@@ -247,7 +247,7 @@
             camera = new THREE.PerspectiveCamera(38, area.clientWidth / area.clientHeight, 1, 2000);
             camera.position.set(0, 160, 150);
             
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(area.clientWidth, area.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             area.appendChild(renderer.domElement);
@@ -354,6 +354,45 @@
             return gearContainer;
         }
 
+        function rebuildTransparentCasing() {
+            if(transparentCasing) scene.remove(transparentCasing);
+
+            const bounds = new THREE.Box3().setFromObject(gearGroup);
+            const size = new THREE.Vector3();
+            const center = new THREE.Vector3();
+            bounds.getSize(size);
+            bounds.getCenter(center);
+
+            // Expand casing buffer parameters around components
+            const padX = size.x + 12;
+            const padY = size.y + 8;
+            const padZ = size.z + 12;
+
+            const boxGeo = new THREE.BoxGeometry(padX, padY, padZ);
+            const boxMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.12,
+                roughness: 0.1,
+                metalness: 0.1,
+                transmission: 0.6, 
+                ior: 1.45,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+
+            transparentCasing = new THREE.Mesh(boxGeo, boxMat);
+            transparentCasing.position.copy(center);
+            
+            // Generate clear structural outer wireframe bounds
+            const wireframeGeo = new THREE.EdgesGeometry(boxGeo);
+            const wireframeMat = new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 1 });
+            const wireframeLines = new THREE.LineSegments(wireframeGeo, wireframeMat);
+            transparentCasing.add(wireframeLines);
+
+            scene.add(transparentCasing);
+        }
+
         function updateDesign() {
             if(!gearGroup) return;
             while(gearGroup.children.length > 0) gearGroup.remove(gearGroup.children[0]);
@@ -422,13 +461,15 @@
                 gearGroup.add(createGearMesh(z4, m, mesh1Center + (d3 + d4)/2, structuralPalette.output, b + 4, 0, (1/gearRatio)*(z3/z4), Math.PI/z4, mesh1Center));
             }
 
+            rebuildTransparentCasing();
+
             const isSafe = fs > fd;
             const safetyStatus = isSafe ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
             
             const output = document.getElementById('step-output');
             output.innerHTML = `
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Step 1: Calculate Gear Velocity</b>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Velocity</b>
                     <div class="mt-1 font-bold text-slate-300 space-y-1">
                         <div>1) Pinion Diameter = ${z1} × ${m} = ${d1} mm</div>
                         <div>2) Velocity Equation = (3.1416 × ${d1} × ${n1}) ÷ 60000</div>
@@ -438,7 +479,7 @@
                 </div>
 
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Step 2: Calculate Force Pushing Teeth (Ft)</b>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Force Pushing Teeth (Ft)</b>
                     <div class="mt-1 font-bold text-slate-300 space-y-1">
                         <div>1) Baseline Calculation = (1000 × ${p}) ÷ ${v}</div>
                         <div>2) Baseline Calculation = ${forceStep1} ÷ ${v} = <span class="text-blue-400">${ft.toFixed(2)} N</span></div>
@@ -448,7 +489,7 @@
                 </div>
 
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Step 3: Gear Tooth Size Factor (Y)</b>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Tooth Size Factor (Y)</b>
                     <div class="mt-1 font-bold text-slate-300 space-y-1">
                         <div>1) Pinion Profile = 0.154 - (0.912 ÷ ${z1}) = ${y1.toFixed(4)}</div>
                         <div>2) Driven Gear Profile = 0.154 - (0.912 ÷ ${z2}) = ${y2.toFixed(4)}</div>
@@ -457,19 +498,19 @@
                 </div>
 
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Step 4: Metal Breaking Limit (Fs)</b>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Metal Breaking Limit (Fs)</b>
                     <div class="mt-1 font-bold text-slate-300 space-y-1">
                         <div>1) Width size = 10 × ${m} = ${b} mm</div>
                         <div>2) Maximum Metal Limit = ${sigma0} × ${b} × 3.1416 × ${m} × ${designY.toFixed(4)}</div>
-                        <div>3) Step A = ${strengthStep1} × 3.1416 × ${m} × ${designY.toFixed(4)}</div>
-                        <div>4) Step B = ${strengthStep2} × ${m} × ${designY.toFixed(4)}</div>
-                        <div>5) Step C = ${strengthStep3} × ${designY.toFixed(4)}</div>
+                        <div>3) ${strengthStep1} × 3.1416 × ${m} × ${designY.toFixed(4)}</div>
+                        <div>4) ${strengthStep2} × ${m} × ${designY.toFixed(4)}</div>
+                        <div>5) ${strengthStep3} × ${designY.toFixed(4)}</div>
                         <div>6) Final Strength Limit = <span class="text-blue-400">${fs.toFixed(2)} N</span></div>
                     </div>
                 </div>
 
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Step 5: Dynamic Shock Speed Load (Fd)</b>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Dynamic Shock Speed Load (Fd)</b>
                     <div class="mt-1 font-bold text-slate-300 space-y-1 text-[10px]">
                         <div>1) Velocity Part = 21 × ${v} = ${term1}</div>
                         <div>2) Friction Part = (${b} × ${C}) + ${ftEff} = ${term2}</div>
@@ -480,7 +521,7 @@
                 </div>
 
                 <div class="calc-card p-3 border rounded-md ${safetyStatus}">
-                    <b class="uppercase text-[9px] block mb-1">Step 6: Security Verification</b>
+                    <b class="uppercase text-[9px] block mb-1">Security Verification</b>
                     <div>Bending Stress: <span class="font-bold">${bendingStress.toFixed(1)} MPa</span></div>
                     <div>Is Metal Limit (${fs.toFixed(1)} N) > Actual Shock Load (${fd.toFixed(1)} N)?</div>
                     <div class="mt-2 pt-1.5 border-t border-white/10 text-[10px] uppercase font-bold tracking-wider">
@@ -492,14 +533,101 @@
 
         function generatePDF() {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // Header Base
             doc.setFillColor(15, 23, 42);
-            doc.rect(0, 0, 210, 30, 'F');
+            doc.rect(0, 0, 210, 32, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFont("Helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("SPURGEAR PRO // ARITHMETIC REPORT", 14, 18);
-            doc.save(`SpurGear_Report.pdf`);
+            doc.setFontSize(14);
+            doc.text("SPURGEAR PRO // INDUSTRIAL SPECIFICATION SHEET", 14, 14);
+            doc.setFontSize(9);
+            doc.setFont("Helvetica", "normal");
+            doc.text(`Configuration Profile: ${engineMode.toUpperCase()} TRAIN SYSTEM`, 14, 22);
+
+            // Add Design Metrics Text
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(11);
+            doc.setFont("Helvetica", "bold");
+            doc.text("1. Mechanical Configuration Variables", 14, 45);
+            
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(9);
+            let yPos = 52;
+            
+            const inputs = ['z1', 'z2', 'module-sel', 'in-p', 'in-n'];
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    doc.text(`${el.previousElementSibling?.innerText || id}: ${el.value}`, 20, yPos);
+                    yPos += 6;
+                }
+            });
+
+            // Section 2: Mathematical Analytical Stream
+            yPos += 6;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(11);
+            doc.text("2. Process Calculations & Verification Stream", 14, yPos);
+            yPos += 8;
+
+            doc.setFont("Courier", "bold");
+            doc.setFontSize(8);
+            const cards = document.querySelectorAll('#step-output .calc-card');
+            cards.forEach(card => {
+                const lines = card.innerText.split('\n');
+                lines.forEach(line => {
+                    if(yPos > 240) { doc.addPage(); yPos = 20; }
+                    doc.text(line, 16, yPos);
+                    yPos += 4.5;
+                });
+                yPos += 3;
+            });
+
+            // Capture 3D Render Canvas to inject as Vector Sketch layout 
+            try {
+                // Temporarily position camera overhead for a perfect clean orthographic alignment vector layout
+                const oldPos = camera.position.clone();
+                const oldTarget = controls.target.clone();
+                
+                // Hide transparent casing elements temporarily to retain zero noise blueprint data lines
+                if(transparentCasing) transparentCasing.visible = false;
+                
+                camera.position.set(0, 220, 0);
+                controls.target.set(0,0,0);
+                controls.update();
+                renderer.render(scene, camera);
+
+                const dataURL = renderer.domElement.toDataURL('image/png');
+                
+                // Reset positions right after image sequence captures
+                camera.position.copy(oldPos);
+                controls.target.copy(oldTarget);
+                controls.update();
+                if(transparentCasing) transparentCasing.visible = true;
+
+                doc.addPage();
+                doc.setFillColor(15, 23, 42);
+                doc.rect(0, 0, 210, 20, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(10);
+                doc.text("APPENDIX A: CAD PROJECTION SKETCH DIAGRAM", 14, 12);
+
+                // Insert into layout
+                doc.addImage(dataURL, 'PNG', 15, 30, 180, 120);
+                
+                doc.setTextColor(100, 116, 139);
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(8);
+                doc.text("* Diagram displays 2D technical footprint with tooth profile contact positions projected onto the pitch diameters.", 14, 160);
+
+            } catch(e) {
+                console.error("Vector Capture failed", e);
+            }
+
+            doc.save(`SpurGearPro_Analytical_Report.pdf`);
         }
 
         function animate() {
@@ -514,8 +642,6 @@
                 activeGears.forEach(gear => {
                     gear.obj.rotation.z += step * gear.speed;
                     const currentRotation = gear.obj.rotation.z;
-                    
-                    let needsColorUpdate = false;
                     
                     gear.teeth.forEach(tooth => {
                         const globalToothAngle = tooth.baseAngle + currentRotation;
@@ -535,7 +661,7 @@
                         const targetColor = new THREE.Color();
                         
                         if (isMeshing) {
-                            targetColor.setHex(0xef4444); // Red for high stress contact zone
+                            targetColor.setHex(0xef4444); 
                         } else {
                             targetColor.setHex(gear.baseBodyColor);
                         }

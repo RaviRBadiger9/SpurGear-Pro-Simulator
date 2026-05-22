@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap');
@@ -32,6 +31,16 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+        /* Print Override Styles to ensure seamless native clean documents */
+        @media print {
+            body { background: white !important; color: black !important; }
+            #splash-screen, #anim-toggle, .fea-legend, header, aside:first-of-type, main { display: none !important; }
+            #data-panel { width: 100% !important; border: none !important; position: static !important; overflow: visible !important; }
+            .calc-card { background: #f8fafc !important; border: 1px solid #cbd5e1 !important; color: black !important; page-break-inside: avoid; }
+            .text-blue-400, .text-emerald-400, .text-amber-400 { color: #1e40af !important; }
+            #step-output { overflow: visible !important; }
+        }
     </style>
 </head>
 <body>
@@ -67,7 +76,7 @@
                 <div class="h-4 w-[1px] bg-slate-700"></div>
                 <h1 class="text-xs font-bold tracking-widest uppercase text-slate-200">SpurGear Pro // <span id="mode-label" class="text-blue-400">--</span></h1>
             </div>
-            <button onclick="generatePDF()" class="bg-blue-600 text-white text-[10px] px-5 py-2 rounded-md font-bold tracking-wider hover:bg-blue-500 shadow-sm transition">
+            <button onclick="exportToPDF()" class="bg-blue-600 text-white text-[10px] px-5 py-2 rounded-md font-bold tracking-wider hover:bg-blue-500 shadow-sm transition">
                 EXPORT SYSTEM REPORT (PDF)
             </button>
         </header>
@@ -303,7 +312,7 @@
             const bodyShape = new THREE.Shape();
             bodyShape.absarc(0, 0, r_dedendum, 0, Math.PI * 2, false);
             
-            // Explicit Hollow Shaft implementation with geometric keyway cuts nested inside the shape rules
+            // Explicit Hollow Shaft integration with calculated keyway slot dimensions
             const shaftRadius = m * 2.5;
             const keyWidth = m * 0.8;
             const keyHeight = m * 0.5;
@@ -639,69 +648,9 @@
             if(renderer && scene && camera) renderer.render(scene, camera);
         }
 
-        // Completely rebuilt PDF configuration block to fix browser block exceptions
-        function generatePDF() {
-            try {
-                const { jsPDF } = window.jspdf;
-                if (!jsPDF) {
-                    alert("PDF Engine is loading. Please click again in a brief second.");
-                    return;
-                }
-                
-                const doc = new jsPDF({
-                    orientation: "p",
-                    unit: "mm",
-                    format: "a4"
-                });
-                
-                // Dark background aesthetic layer 
-                doc.setFillColor(15, 23, 42);
-                doc.rect(0, 0, 210, 297, 'F');
-                
-                // Typography headers
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(22);
-                doc.setTextColor(59, 130, 246);
-                doc.text("SpurGear Pro Calculations Report", 20, 35);
-                
-                doc.setFontSize(10);
-                doc.setFont("courier", "normal");
-                doc.setTextColor(148, 163, 184);
-                doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 45);
-                doc.text(`Configuration Mode: ${engineMode.toUpperCase()}`, 20, 51);
-                
-                doc.setStrokeColor(51, 65, 85);
-                doc.line(20, 58, 190, 58);
-                
-                doc.setFontSize(13);
-                doc.setFont("helvetica", "bold");
-                doc.setTextColor(255, 255, 255);
-                doc.text("ENGINEERING DESIGN METRICS", 20, 72);
-                
-                let yPos = 85;
-                doc.setFontSize(10);
-                doc.setFont("courier", "bold");
-                doc.setTextColor(203, 213, 225);
-                
-                const lines = [
-                    `Pinion Teeth Count (Z1): ${document.getElementById('z1').value}`,
-                    `Driven Gear Teeth Count (Z2): ${document.getElementById('z2').value}`,
-                    `Module Pitch Step Value (m): ${document.getElementById('module-sel').value} mm`,
-                    `Nominal Drive Power (P): ${document.getElementById('in-p').value} kW`,
-                    `Calculated Structural Bending Stress: ${document.getElementById('max-stress-label').innerText}`
-                ];
-                
-                lines.forEach(line => {
-                    doc.text(`* ${line}`, 22, yPos);
-                    yPos += 10;
-                });
-                
-                // Force file generation save execution stream directly
-                doc.save(`SpurGearPro-Report-${engineMode}.pdf`);
-            } catch (err) {
-                console.error("PDF engine crash caught:", err);
-                alert("Error compiling document metrics. Check element properties.");
-            }
+        // Clean Print engine fallback function that opens the print UI to instantly save calculations without cross-origin script failures
+        function exportToPDF() {
+            window.print();
         }
     </script>
 </body>

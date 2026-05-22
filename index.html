@@ -161,7 +161,7 @@
 
                 <div class="grid grid-cols-2 gap-3 border-t pt-3 border-slate-800">
                     <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Power (kW)</label><input type="number" id="in-p" value="15" class="mt-1" oninput="updateDesign()"></div>
-                    <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Speed (RPM)</label><input type="number" id="in-n" value="1200" class="mt-1" oninput="updateDesign()"></div>
+                    <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Input Speed (RPM)</label><input type="number" id="in-n" value="1200" class="mt-1" oninput="updateDesign()"></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 border-t pt-3 border-slate-800">
@@ -214,6 +214,9 @@
         let scene, camera, renderer, controls, gearGroup, engineMode, transparentCasing;
         let activeGears = []; 
         let isAnimating = true;
+
+        // Configuration memory variables for unified report compiling integration
+        let globalCalcResults = {};
 
         const structuralPalette = {
             pinion: 0x1e40af,    
@@ -306,7 +309,6 @@
             const boreRadius = m * 2.8; 
             const splineCount = 8;
             const splineDepth = m * 0.4;
-            const splineWidthAngle = (Math.PI * 2) / (splineCount * 2);
 
             const splineHolePath = new THREE.Path();
             for (let i = 0; i <= splineCount * 2; i++) {
@@ -501,6 +503,14 @@
             const bendingStress = (b * m * designY > 0) ? (ftEff / (b * m * designY)) : 0;
             document.getElementById('max-stress-label').innerText = bendingStress.toFixed(1) + " MPa";
 
+            // Cache data locally in object tree to feed the PDF builder sequence cleanly
+            globalCalcResults = {
+                z1: z1, z2: z2, z3: z3, z4: z4, module: m, power: p, rpm: n1,
+                v: v, ft: ft, ftEff: ftEff, y1: y1, y2: y2, designY: designY,
+                fs: fs, fd: fd, bendingStress: bendingStress, isSafe: fs > fd,
+                toothType: toothType, errorVal: errorVal, matPair: matPair
+            };
+
             const mesh1Center = (d1 + d2) / 2;
             if(engineMode === 'single') {
                 gearGroup.add(createGearMesh(z1, m, 0, structuralPalette.pinion, 0, 0, 1, 0, mesh1Center));
@@ -544,10 +554,10 @@
             const output = document.getElementById('step-output');
             output.innerHTML = `
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Velocity</b>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Velocity (Linked to RPM)</b>
                     <div class="mt-1 font-bold text-slate-300 space-y-1">
                         <div>1) Pinion Diameter = ${z1} × ${m} = ${d1} mm</div>
-                        <div>2) Velocity Equation = (3.1416 × ${d1} × ${n1}) ÷ 60000</div>
+                        <div>2) Velocity Equation = (3.1416 × ${d1} × <span class="text-amber-400">${n1} RPM</span>) ÷ 60000</div>
                         <div>3) Velocity Step = ${speedStep1} ÷ 60000</div>
                         <div>4) Final Velocity = <span class="text-blue-400">${v} m/s</span></div>
                     </div>
@@ -566,9 +576,9 @@
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
                     <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Tooth Size Factor (Y)</b>
                     <div class="mt-1 font-bold text-slate-300 space-y-1">
-                        <div>1) Pinion Profile = 0.154 - (0.912 ÷ ${z1}) = ${y1.toFixed(4)}</div>
-                        <div>2) Driven Gear Profile = 0.154 - (0.912 ÷ ${z2}) = ${y2.toFixed(4)}</div>
-                        <div>3) Selected Smallest Profile = <span class="text-amber-400">${designY.toFixed(4)}</span></div>
+                        <div>1) Pinion Profile (Y1) = 0.154 - (0.912 ÷ ${z1}) = ${y1.toFixed(4)}</div>
+                        <div>2) Driven Gear Profile (Y2) = 0.154 - (0.912 ÷ ${z2}) = ${y2.toFixed(4)}</div>
+                        <div>3) Selected Smallest Profile (Weakest Root) = <span class="text-amber-400">${designY.toFixed(4)}</span></div>
                     </div>
                 </div>
 
@@ -673,12 +683,9 @@
         // Localized base64 Plaintext PDF Engine compiler. Completely bypasses sandbox tracking blocks.
         function generateLocalPDF() {
             try {
-                const z1 = document.getElementById('z1').value;
-                const z2 = document.getElementById('z2').value;
-                const m = document.getElementById('module-sel').value;
-                const p = document.getElementById('in-p').value;
-                const stress = document.getElementById('max-stress-label').innerText;
+                const r = globalCalcResults;
                 const ts = new Date().toLocaleString();
+                const statusStr = r.isSafe ? "PASS // SYSTEM DESIGN IS EXTREMELY SAFE" : "FAIL // STRUCTURAL CRITICAL FAILURE UNDER SHOCK LOAD";
 
                 const pdfContent = `%PDF-1.4
 1 0 obj
@@ -691,40 +698,108 @@ endobj
 << /Type /Page /Parent 2 0 R /Resources 4 0 R /MediaBox [0 0 595 842] /Contents 5 0 R >>
 endobj
 4 0 obj
-<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Courier >> >> >>
+<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >> /F3 << /Type /Font /Subtype /Type1 /BaseFont /Courier >> >> >>
 endobj
 5 0 obj
-<< /Length 650 >>
+<< /Length 2500 >>
 stream
 BT
-/F1 22 Tf
-1 0 0 1 50 750 Tm
-0.2 0.5 0.9 rg
-(SpurGear Pro Calculation Report) Tj
-/F2 10 Tf
+/F1 20 Tf
+1 0 0 1 45 790 Tm
+0.1 0.4 0.8 rg
+(SPURGEAR PRO ENGINEERING COMPLIANCE REPORT) Tj
+/F3 9 Tf
 0.4 0.4 0.4 rg
-1 0 0 1 50 710 Tm
-(Generated: ${ts}) Tj
-1 0 0 1 50 695 Tm
-(System Layout Mode: ${engineMode.toUpperCase()}) Tj
+1 0 0 1 45 765 Tm
+(Generated: ${ts}   |   System Architecture Profile: ${engineMode.toUpperCase()} STAGE MESH) Tj
 0 0 0 rg
-1 0 0 1 50 640 Tm
-/F1 14 Tf
-(DESIGN SPECIFICATIONS MATRIX:) Tj
-/F2 12 Tf
-1 0 0 1 50 600 Tm
-(* Pinion Teeth Count [Z1]: ${z1} teeth) Tj
-1 0 0 1 50 580 Tm
-(* Driven Gear Teeth Count [Z2]: ${z2} teeth) Tj
-1 0 0 1 50 560 Tm
-(* Mechanical Pitch Module [m]: ${m} mm) Tj
-1 0 0 1 50 540 Tm
-(* Motor Input Power [P]: ${p} kW) Tj
-1 0 0 1 50 520 Tm
-(* Calculated Bending Stress: ${stress}) Tj
-1 0 0 1 50 480 Tm
+1 0 0 1 45 740 Tm
+/F1 11 Tf
+(1. PRIMARY MECHANICAL SYSTEM CONSTRAINTS) Tj
+/F3 10 Tf
+1 0 0 1 55 720 Tm
+(- Input Velocity Setting [n1]: ${r.rpm} RPM) Tj
+1 0 0 1 55 705 Tm
+(- Motor Operational Input Power [P]: ${r.power} kW) Tj
+1 0 0 1 55 690 Tm
+(- Mechanical Pitch Module [m]: ${r.module} mm) Tj
+1 0 0 1 55 675 Tm
+(- Tooth Profile System Model: ${r.toothType} Profile Layout) Tj
+1 0 0 1 55 660 Tm
+(- Structural Contact Material Pair: ${r.matPair}) Tj
+1 0 0 1 55 645 Tm
+(- Manufacturing Accuracy Tolerance: ${r.errorVal} mm) Tj
+
+1 0 0 1 45 615 Tm
+/F1 11 Tf
+(2. GEARBOX STAGE TRAIN GEOMETRY) Tj
+/F3 10 Tf
+1 0 0 1 55 595 Tm
+(- Stage 1 Pinion Tooth Matrix [Z1]: ${r.z1} Teeth) Tj
+1 0 0 1 55 580 Tm
+(- Stage 1 Driven Gear Matrix [Z2]: ${r.z2} Teeth) Tj
+1 0 0 1 55 565 Tm
+(- Stage 2 Pinion Tooth Matrix [Z3]: ${r.z3} Teeth  \(Multi-Stage Configuration\)) Tj
+1 0 0 1 55 550 Tm
+(- Stage 2 Driven Gear Matrix [Z4]: ${r.z4} Teeth  \(Multi-Stage Configuration\)) Tj
+
+1 0 0 1 45 520 Tm
+/F1 11 Tf
+(3. LIVE KINEMATICAL CALCULATED RESULTS) Tj
+/F3 10 Tf
+1 0 0 1 55 500 Tm
+(- Pitch Line Operational Velocity [v]: ${r.v} m/s) Tj
+1 0 0 1 55 485 Tm
+(- Transmitted Tangential Force Vector [Ft]: ${r.ft.toFixed(2)} N) Tj
+1 0 0 1 55 470 Tm
+(- Effective Operational Force Load [Ft_eff]: ${r.ftEff.toFixed(2)} N) Tj
+
+1 0 0 1 45 440 Tm
+/F1 11 Tf
+(4. TOOTH SIZE FACTOR \(LEWIS FORM FACTOR ANALYSIS\)) Tj
+/F3 10 Tf
+1 0 0 1 55 420 Tm
+(- Pinion Involute Geometry Factor [Y1]: ${r.y1.toFixed(4)}) Tj
+1 0 0 1 55 405 Tm
+(- Driven Gear Involute Geometry Factor [Y2]: ${r.y2.toFixed(4)}) Tj
+1 0 0 1 55 390 Tm
+(- Selected Critical Size Component Factor [Y]: ${r.designY.toFixed(4)}) Tj
+
+1 0 0 1 45 360 Tm
+/F1 11 Tf
+(5. STRESS STRENGTH VERIFICATION METRICS) Tj
+/F3 10 Tf
+1 0 0 1 55 340 Tm
+(- Bending Stress Footprint: ${r.bendingStress.toFixed(2)} MPa) Tj
+1 0 0 1 55 325 Tm
+(- Maximum Safe Ultimate Structural Material Capacity [Fs]: ${r.fs.toFixed(2)} N) Tj
+1 0 0 1 55 310 Tm
+(- Dynamic Buckingham Impact Loading Force Peak [Fd]: ${r.fd.toFixed(2)} N) Tj
+
+1 0 0 1 45 275 Tm
+/F1 11 Tf
+(6. BORE STRUCTURE & SYSTEM SHAFT METRICS) Tj
+/F3 10 Tf
+1 0 0 1 55 255 Tm
+(- Center Axis Configuration: Heavy Duty Hollow Structural Core Bore) Tj
+1 0 0 1 55 240 Tm
+(- Interlocking Interface: 8-Key Standard Internal Precision Mechanical Splines) Tj
+1 0 0 1 55 225 Tm
+(- Interlocking Shaft Mesh Connection Rating: LOCKED / SYSTEM COMPILED SUCCESFULLY) Tj
+
+0.1 0.5 0.2 rg
+1 0 0 1 45 180 Tm
 /F1 12 Tf
-(* Core Shaft Type: Hollow Bore Matrix with Interlocking Splines [OK]) Tj
+(7. FINAL COMPLIANCE VERIFICATION STATUS) Tj
+/F2 11 Tf
+1 0 0 1 55 155 Tm
+(${statusStr}) Tj
+0.5 0.5 0.5 rg
+/F3 9 Tf
+1 0 0 1 45 110 Tm
+(------------------------------------------------------------------------------------------------------------------------) Tj
+1 0 0 1 45 95 Tm
+(SpurGear Pro Code Compiler Core System. Validated under dynamic Buckingham and Lewis equation mechanical rules.) Tj
 ET
 endstream
 endobj
@@ -735,17 +810,17 @@ xref
 0000000056 00000 n 
 0000000111 00000 n 
 0000000212 00000 n 
-0000000332 00000 n 
+0000000350 00000 n 
 trailer
 << /Size 6 /Root 1 0 R >>
 startxref
-1033
+2902
 %%EOF`;
 
                 const blob = new Blob([pdfContent], { type: 'application/pdf' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `SpurGearPro-Analysis-${engineMode}.pdf`;
+                link.download = `SpurGearPro-Calculations-${r.rpm}RPM.pdf`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);

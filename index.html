@@ -3,517 +3,695 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpurGear Pro - Stress & Mass Verification Suite</title>
+    <title>SpurGear Pro | Industrial Gearbox Design Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <style>
-        :root {
-            --slate-900: #0f172a;
-            --slate-800: #1e293b;
-            --slate-700: #334155;
-            --slate-100: #f1f5f9;
-            --emerald-500: #10b981;
-            --emerald-600: #059669;
-            --rose-500: #ef4444;
-            --blue-600: #2563eb;
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; margin: 0; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        input, select { background: #1e293b !important; border: 1px solid #475569 !important; color: #f8fafc !important; padding: 0.4rem; font-size: 0.75rem; border-radius: 6px; width: 100%; transition: border-color 0.2s; }
+        input:focus, select:focus { border-color: #3b82f6 !important; outline: none; }
+        #splash-screen { position: fixed; inset: 0; background: #090d16; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .option-card { background: #1e293b; padding: 2.5rem 2rem; border-radius: 12px; width: 320px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); }
+        .option-card:hover { transform: translateY(-4px); border-color: #3b82f6; background: #243249; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0b0f19;
-            color: var(--slate-100);
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: var(--slate-900);
-            border: 1px solid var(--slate-700);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-        }
-        .header {
-            border-bottom: 2px solid var(--slate-800);
-            padding-bottom: 16px;
-            margin-bottom: 24px;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 28px;
-            color: #fff;
-            letter-spacing: -0.5px;
-        }
-        .header p {
-            margin: 4px 0 0 0;
-            color: #94a3b8;
-            font-size: 14px;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-        @media(max-width: 768px) { .grid { grid-template-columns: 1fr; } }
-        .panel {
-            background: var(--slate-800);
-            border: 1px solid var(--slate-700);
-            border-radius: 8px;
-            padding: 20px;
-        }
-        .panel h2 {
-            margin-top: 0;
-            font-size: 18px;
-            border-bottom: 1px solid var(--slate-700);
-            padding-bottom: 8px;
-            color: #fff;
-        }
-        .form-group {
-            margin-bottom: 16px;
-        }
-        label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #cbd5e1;
-        }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            background: var(--slate-900);
-            border: 1px solid var(--slate-700);
-            border-radius: 6px;
-            color: #fff;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        input:focus, select:focus {
-            outline: 2px solid var(--blue-600);
-        }
-        .btn-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 20px;
-        }
-        button {
-            padding: 12px;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-size: 14px;
-        }
-        .btn-calc { background: var(--blue-600); color: white; }
-        .btn-calc:hover { background: #1d4ed8; }
-        .btn-pdf { background: var(--slate-700); color: white; }
-        .btn-pdf:hover { background: #475569; }
+        .calc-card { animation: slideIn 0.3s ease-out forwards; }
+        #anim-toggle { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 50; }
         
-        .status-banner {
-            padding: 14px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 14px;
-            text-align: center;
-            margin-top: 16px;
-        }
-        .pass { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--emerald-500); color: #34d399; }
-        .fail { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--rose-500); color: #f87171; }
-        
-        .results-box {
-            background: var(--slate-900);
-            border-radius: 6px;
-            padding: 14px;
-            font-family: monospace;
-            font-size: 13px;
-            line-height: 1.6;
-            color: #e2e8f0;
-            overflow-x: auto;
-        }
+        .fea-legend { position: absolute; bottom: 30px; right: 540px; width: 180px; background: rgba(30, 41, 59, 0.9); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 10px; box-shadow: 0 4px 6px rgb(0 0 0 / 0.3); z-index: 40; }
+        .gradient-bar { height: 10px; width: 100%; background: linear-gradient(to right, #1e40af, #f59e0b, #ef4444); border-radius: 2px; margin: 6px 0; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>SpurGear Pro</h1>
-        <p>INDUSTRIAL GEARBOX DESIGN REPORT // STRUCTURAL &amp; MASS VERIFICATION SUITE</p>
-    </div>
-
-    <div class="grid">
-        <!-- Input Configurations -->
-        <div class="panel">
-            <h2>1. Parameter Input Configurations</h2>
-            
-            <div class="grid" style="gap: 12px; grid-template-columns: 1fr 1fr;">
-                <div class="form-group">
-                    <label for="z1">Pinion Teeth (Z1)</label>
-                    <input type="number" id="z1" value="20" min="12">
+    <div id="splash-screen">
+        <div class="max-w-5xl w-full px-8 text-center">
+            <h2 class="text-white text-4xl font-bold mb-2 tracking-tight">SpurGear Pro</h2>
+            <p class="text-slate-400 text-sm mb-12">Mathematical & Transparent Contact Stress Solver</p>
+            <div class="flex flex-wrap justify-center gap-6">
+                <div class="option-card text-left" onclick="launchEngine('single')">
+                    <span class="text-[10px] bg-blue-500/10 text-blue-400 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Standard</span>
+                    <h3 class="font-bold text-white text-lg mt-2">Single Stage Mesh</h3>
+                    <p class="text-xs text-slate-400 mt-1">Standard 2-gear reduction mesh with localized profile contact FEA.</p>
                 </div>
-                <div class="form-group">
-                    <label for="z2">Gear Teeth (Z2)</label>
-                    <input type="number" id="z2" value="50" min="12">
+                <div class="option-card text-left" onclick="launchEngine('double')">
+                    <span class="text-[10px] bg-purple-500/10 text-purple-400 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Extended</span>
+                    <h3 class="font-bold text-white text-lg mt-2">Double Stage</h3>
+                    <p class="text-xs text-slate-400 mt-1">Multi-stage reduction layout featuring decoupled intermediate lines.</p>
+                </div>
+                <div class="option-card text-left" onclick="launchEngine('compound')">
+                    <span class="text-[10px] bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Advanced</span>
+                    <h3 class="font-bold text-white text-lg mt-2">Compound Train</h3>
+                    <p class="text-xs text-slate-400 mt-1">Coaxial structural alignment pairing two independent meshes together.</p>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="grid" style="gap: 12px; grid-template-columns: 1fr 1fr;">
-                <div class="form-group">
-                    <label for="module-sel">Module (m) [mm]</label>
-                    <select id="module-sel">
-                        <option value="1.5">1.5</option>
-                        <option value="2.0">2.0</option>
-                        <option value="2.5">2.5</option>
-                        <option value="3.0" selected>3.0</option>
-                        <option value="4.0">4.0</option>
-                        <option value="5.0">5.0</option>
-                        <option value="6.0">6.0</option>
-                        <option value="8.0">8.0</option>
+    <div id="main-engine" class="min-h-screen flex flex-col hidden">
+        <header class="h-14 glass flex items-center justify-between px-8 border-b border-slate-800 sticky top-0 z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="location.reload()" class="text-[10px] font-bold tracking-wider bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded transition hover:bg-slate-700">← MAIN MENU</button>
+                <div class="h-4 w-[1px] bg-slate-700"></div>
+                <h1 class="text-xs font-bold tracking-widest uppercase text-slate-200">SpurGear Pro // <span id="mode-label" class="text-blue-400">--</span></h1>
+            </div>
+            <button onclick="generatePDF()" class="bg-blue-600 text-white text-[10px] px-5 py-2 rounded-md font-bold tracking-wider hover:bg-blue-500 shadow-sm transition">
+                EXPORT SYSTEM REPORT WITH 2D SKETCH (PDF)
+            </button>
+        </header>
+
+        <div class="flex-1 flex flex-col lg:flex-row overflow-visible relative">
+            <div id="anim-toggle">
+                <button id="toggleBtn" onclick="toggleAnimation()" class="bg-slate-800 text-slate-200 border border-slate-700 text-[10px] tracking-wider px-6 py-2.5 rounded-full font-bold shadow-lg hover:bg-blue-600 hover:text-white transition-all">
+                    DRIVE MOTOR: ENGAGED
+                </button>
+            </div>
+
+            <div class="fea-legend mono text-slate-300">
+                <div class="font-bold text-white mb-0.5">Active Mesh Tooth FEA</div>
+                <div class="gradient-bar"></div>
+                <div class="flex justify-between text-[8px] text-slate-400 font-bold">
+                    <span>Base Body Color</span>
+                    <span id="max-stress-label">Max Stress</span>
+                </div>
+                <div class="mt-2 pt-1.5 border-t border-slate-800 text-[8px] text-slate-500">Casing: Clear Acrylic</div>
+            </div>
+
+            <!-- Parameters Sidebar (Left) -->
+            <aside class="w-full lg:w-80 glass border-b lg:border-b-0 lg:border-r border-slate-800 p-5 space-y-4 h-auto lg:h-[calc(100vh-3.5rem)] lg:sticky lg:top-14 overflow-y-auto z-10 shadow-sm">
+                <h2 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Design Constraints</h2>
+                
+                <section>
+                    <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Material Stress Limit</label>
+                    <select id="material-stress" class="mt-1" onchange="updateDesign()">
+                        <option value="47.1">Cast Iron Grade 20 (47.1 MPa)</option>
+                        <option value="78.5">Cast Iron Grade 35 (78.5 MPa)</option>
+                        <option value="138.3">Cast Steel (138.3 MPa)</option>
+                        <option value="233.4" selected>Steel C45 (233.4 MPa)</option>
+                        <option value="345.2">Alloy Steel (345.2 MPa)</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label for="face-width">Face Width (b) [mm]</label>
-                    <input type="number" id="face-width" value="30" min="5">
-                </div>
-            </div>
+                </section>
 
-            <div class="grid" style="gap: 12px; grid-template-columns: 1fr 1fr;">
-                <div class="form-group">
-                    <label for="in-p">Power (P) [kW]</label>
-                    <input type="number" id="in-p" value="15" step="0.1">
-                </div>
-                <div class="form-group">
-                    <label for="in-n">Pinion Speed (n) [RPM]</label>
-                    <input type="number" id="in-n" value="1440">
-                </div>
-            </div>
+                <section>
+                    <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Contact Materials</label>
+                    <select id="mat-pair" class="mt-1" onchange="updateDesign()">
+                        <option value="ST_ST" selected>Steel & Steel</option>
+                        <option value="CI_CI">Cast Iron & Cast Iron</option>
+                        <option value="CI_ST">Cast Iron & Steel</option>
+                    </select>
+                </section>
 
-            <div class="form-group">
-                <label for="tooth-system">Tooth Profile System</label>
-                <select id="tooth-system">
-                    <option value="20-inv" selected>20° Full-Depth Involute</option>
-                    <option value="14.5-inv">14.5° Full-Depth Involute</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="material-stress">Structural Material Selection</label>
-                <select id="material-stress">
-                    <option value="150">Cast Iron (Grade 30) [σ_all = 150 MPa]</option>
-                    <option value="250" selected>Plain Carbon Steel (C45) [σ_all = 250 MPa]</option>
-                    <option value="400">Alloy Steel (40Cr1MoV) [σ_all = 400 MPa]</option>
-                </select>
-            </div>
-
-            <div class="panel" style="background: rgba(0,0,0,0.2); margin-top: 12px; padding: 12px;">
-                <h3 style="margin-top:0; font-size: 14px; color: #60a5fa;">Hollow Center Bore Configuration</h3>
-                <div class="grid" style="gap: 12px; grid-template-columns: 1fr 1fr; margin-bottom: 0;">
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label for="bore-d1">Pinion Bore dh1 [mm]</label>
-                        <input type="number" id="bore-d1" value="15" min="0">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Load Type</label>
+                        <select id="load-type" class="mt-1" onchange="updateDesign()">
+                            <option value="steady">Uniform/Steady</option>
+                            <option value="medium" selected>Medium Shock</option>
+                            <option value="heavy">Heavy Shock</option>
+                        </select>
                     </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label for="bore-d2">Gear Bore dh2 [mm]</label>
-                        <input type="number" id="bore-d2" value="35" min="0">
+                    <div>
+                        <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Duty Cycle</label>
+                        <select id="service-type" class="mt-1" onchange="updateDesign()">
+                            <option value="intermittent">Intermittent (3h)</option>
+                            <option value="standard" selected>Standard (10h)</option>
+                            <option value="continuous">Continuous (24h)</option>
+                        </select>
                     </div>
                 </div>
-                <p style="font-size: 11px; color: #94a3b8; margin: 6px 0 0 0;">Setting diameter to 0 computes a solid component configuration.</p>
-            </div>
 
-            <div class="btn-group">
-                <button type="button" class="btn-calc" onclick="evaluateMechanics()">Check Stress &amp; Weight</button>
-                <button type="button" class="btn-pdf" onclick="generatePDF()">Generate PDF Report</button>
-            </div>
-        </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Tooth Angle Profile</label>
+                        <select id="tooth-system" class="mt-1" onchange="updateDesign()">
+                            <option value="14.5">14.5° Involute</option>
+                            <option value="20" selected>20° Full Depth</option>
+                            <option value="20stub">20° Stub Profile</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Manufacturing Error</label>
+                        <select id="gear-error" class="mt-1" onchange="updateDesign()">
+                            <option value="0.01">Class I (0.01 mm)</option>
+                            <option value="0.03" selected>Class II (0.03 mm)</option>
+                            <option value="0.06">Class III (0.06 mm)</option>
+                        </select>
+                    </div>
+                </div>
 
-        <!-- Output Display Panel -->
-        <div class="panel">
-            <h2>2. Verification &amp; Compliance Summary</h2>
-            
-            <div id="status-banner" class="status-banner pass">
-                SYSTEM STATUS: READY FOR ANALYSIS
-            </div>
+                <section>
+                    <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Module size (m)</label>
+                    <select id="module-sel" class="mt-1" onchange="updateDesign()">
+                        <option value="1">1.0 mm</option><option value="2">2.0 mm</option>
+                        <option value="3" selected>3.0 mm</option><option value="4">4.0 mm</option>
+                        <option value="5">5.0 mm</option><option value="6">6.0 mm</option><option value="8">8.0 mm</option>
+                    </select>
+                </section>
 
-            <h3 style="font-size:14px; margin-bottom:6px; color:#94a3b8;">Maximum Bending Stress: <span id="max-stress-label" style="color:#fff; font-weight:bold;">--</span></h3>
-            <h3 style="font-size:14px; margin-bottom:12px; color:#94a3b8;">Total Assembly Mass: <span id="total-weight-label" style="color:#60a5fa; font-weight:bold;">--</span></h3>
+                <div class="grid grid-cols-2 gap-3 border-t pt-3 border-slate-800">
+                    <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Power (kW)</label><input type="number" id="in-p" value="15" class="mt-1" oninput="updateDesign()"></div>
+                    <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Speed (RPM)</label><input type="number" id="in-n" value="1200" class="mt-1" oninput="updateDesign()"></div>
+                </div>
 
-            <div class="results-box" id="step-output">
-                Perform a calculation trace script deployment to run mechanical static verification steps...
-            </div>
+                <div class="grid grid-cols-2 gap-3 border-t pt-3 border-slate-800">
+                    <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Pinion Teeth (Z1)</label><input type="number" id="z1" value="20" class="mt-1" oninput="updateDesign()"></div>
+                    <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Gear Teeth (Z2)</label><input type="number" id="z2" value="50" class="mt-1" oninput="updateDesign()"></div>
+                </div>
+
+                <div id="multi-stage-inputs" class="hidden grid grid-cols-2 gap-3 border-t pt-3 border-slate-800">
+                    <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Z3 (Stage 2 Pinion)</label><input type="number" id="z3" value="18" class="mt-1" oninput="updateDesign()"></div>
+                    <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Z4 (Stage 2 Gear)</label><input type="number" id="z4" value="45" class="mt-1" oninput="updateDesign()"></div>
+                </div>
+
+                <!-- Weight Check Interface Module -->
+                <div class="border-t pt-3 border-slate-800 space-y-2">
+                    <button id="weightCalcBtn" onclick="calculateSystemWeight()" class="w-full bg-slate-800 hover:bg-slate-700 text-blue-400 text-[10px] tracking-wider py-2 rounded font-bold border border-slate-700 transition">
+                        RUN TRAIN WEIGHT CHECK
+                    </button>
+                    <div id="weight-display" class="hidden calc-card p-2.5 bg-slate-900/80 border border-slate-800 rounded-md text-[10px] mono text-slate-400 space-y-1">
+                        <div class="text-white font-bold border-b border-slate-800 pb-1 mb-1">Volumetric Mass Diagnostics</div>
+                        <div>Pinion (Z1): <span id="w-z1" class="text-blue-400">0.00 kg</span></div>
+                        <div>Gear (Z2): <span id="w-z2" class="text-blue-400">0.00 kg</span></div>
+                        <div id="w-stage2" class="hidden space-y-1">
+                            <div>Pinion (Z3): <span id="w-z3" class="text-blue-400">0.00 kg</span></div>
+                            <div>Gear (Z4): <span id="w-z4" class="text-blue-400">0.00 kg</span></div>
+                        </div>
+                        <div class="pt-1 border-t border-slate-800 text-xs font-bold text-emerald-400">
+                            Total Mass: <span id="w-total">0.00 kg</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 3D Render Area -->
+            <main class="flex-1 min-h-[450px] lg:h-[calc(100vh-3.5rem)] bg-[#1e293b] relative">
+                <div id="render-area" class="w-full h-full"></div>
+            </main>
+
+            <!-- Analytics Output Panel (Right) -->
+            <aside id="data-panel" class="w-full lg:w-[540px] glass border-t lg:border-t-0 lg:border-l border-slate-800 p-5 h-auto lg:h-[calc(100vh-3.5rem)] lg:sticky lg:top-14 flex flex-col overflow-hidden shadow-sm">
+                <h2 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex-shrink-0">
+                    Step-by-Step Simple Math Breakdown
+                </h2>
+                <!-- Calculation Stream -->
+                <div id="step-output" class="text-[11px] mono space-y-4 mt-3 overflow-y-auto flex-1 pr-1"></div>
+            </aside>
         </div>
     </div>
-</div>
 
-<script>
-    // Automatically run computation on window initialization load
-    window.addEventListener('DOMContentLoaded', () => {
-        evaluateMechanics();
-    });
+    <script>
+        let scene, camera, renderer, controls, gearGroup, engineMode, transparentCasing;
+        let activeGears = []; 
+        let isAnimating = true;
 
-    function evaluateMechanics() {
-        const z1 = parseInt(document.getElementById('z1').value) || 20;
-        const z2 = parseInt(document.getElementById('z2').value) || 50;
-        const m = parseFloat(document.getElementById('module-sel').value) || 3;
-        const b = parseFloat(document.getElementById('face-width').value) || 30;
-        const P = parseFloat(document.getElementById('in-p').value) || 15;
-        const n = parseFloat(document.getElementById('in-n').value) || 1440;
-        const sigma_all = parseFloat(document.getElementById('material-stress').value);
-        const toothSystem = document.getElementById('tooth-system').value;
-        
-        const dh1 = parseFloat(document.getElementById('bore-d1').value) || 0;
-        const dh2 = parseFloat(document.getElementById('bore-d2').value) || 0;
+        const structuralPalette = {
+            pinion: 0x1e40af,    
+            driven: 0x065f46,    
+            inter: 0xb45309,     
+            output: 0x6d28d9     
+        };
 
-        // 1. Structural Geometry Setup
-        const d1 = z1 * m;
-        const d2 = z2 * m;
-        
-        let Y1 = (toothSystem === "20-inv") ? (0.154 - (0.912 / z1)) : (0.124 - (0.684 / z1));
-        let Y2 = (toothSystem === "20-inv") ? (0.154 - (0.912 / z2)) : (0.124 - (0.684 / z2));
-        
-        // 2. Load Mechanics
-        const omega = (2 * Math.PI * n) / 60;
-        const T1 = (P * 1000) / omega; 
-        const Ft = T1 / (d1 / 2000);   
-        
-        const v = (Math.PI * d1 * n) / 60000;
-        const Kv = 3 / (3 + v);
-        
-        // Lewis Stress Computation
-        const sigma_calc = Ft / (Kv * b * m * Math.PI * Y1);
-        
-        // 3. Hollow Boundary Constraint Controls
-        const root_d1 = d1 - (2.5 * m);
-        const root_d2 = d2 - (2.5 * m);
-        
-        let geometricFailure = false;
-        let failureReason = "";
+        const serviceFactorTable = {
+            steady: { intermittent: 0.8, standard: 1.0, continuous: 1.25 },
+            medium: { intermittent: 1.2, standard: 1.5, continuous: 1.8 },
+            heavy: { intermittent: 1.5, standard: 1.8, continuous: 2.0 }
+        };
 
-        if(dh1 >= root_d1) {
-            geometricFailure = true;
-            failureReason = `Bore diameter dh1 (${dh1}mm) cuts through Pinion Root Diameter (${root_d1.toFixed(1)}mm)!`;
-        }
-        if(dh2 >= root_d2) {
-            geometricFailure = true;
-            failureReason = `Bore diameter dh2 (${dh2}mm) cuts through Gear Root Diameter (${root_d2.toFixed(1)}mm)!`;
+        const dynamicFactorC = {
+            "14.5": { "ST_ST": { "0.01": 110, "0.03": 330, "0.06": 660 }, "CI_CI": { "0.01": 55, "0.03": 165, "0.06": 331 } },
+            "20": { "ST_ST": { "0.01": 114, "0.03": 343, "0.06": 686 }, "CI_CI": { "0.01": 57, "0.03": 171, "0.06": 343 } },
+            "20stub": { "ST_ST": { "0.01": 118, "0.03": 356, "0.06": 712 }, "CI_CI": { "0.01": 59, "0.03": 178, "0.06": 356 } }
+        };
+
+        dynamicFactorC["14.5"]["CI_ST"] = dynamicFactorC["14.5"]["CI_CI"];
+        dynamicFactorC["20"]["CI_ST"] = dynamicFactorC["20"]["CI_CI"];
+        dynamicFactorC["20stub"]["CI_ST"] = dynamicFactorC["20stub"]["CI_CI"];
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            const btn = document.getElementById('toggleBtn');
+            btn.innerText = isAnimating ? "DRIVE MOTOR: ENGAGED" : "DRIVE MOTOR: STOPPED";
+            btn.classList.toggle('border-slate-700');
+            btn.classList.toggle('border-red-500');
+            btn.classList.toggle('text-red-400');
         }
 
-        // 4. Component Volume & Mass Computation (Steel density: 7850 kg/m^3)
-        const rho = 7850; 
-        const b_m = b / 1000; 
-        
-        const vol_p = Math.PI * (Math.pow(d1/2000, 2) - Math.pow(dh1/2000, 2)) * b_m;
-        const vol_g = Math.PI * (Math.pow(d2/2000, 2) - Math.pow(dh2/2000, 2)) * b_m;
-        
-        const mass_p = Math.max(0, vol_p * rho);
-        const mass_g = Math.max(0, vol_g * rho);
-        const total_mass = mass_p + mass_g;
-
-        // Sync to Application View States
-        const banner = document.getElementById('status-banner');
-        const stressLabel = document.getElementById('max-stress-label');
-        const weightLabel = document.getElementById('total-weight-label');
-        const output = document.getElementById('step-output');
-
-        stressLabel.innerText = `${sigma_calc.toFixed(2)} MPa`;
-        weightLabel.innerText = `${total_mass.toFixed(2)} kg`;
-
-        let isSafe = (sigma_calc <= sigma_all) && !geometricFailure;
-
-        if (isSafe) {
-            banner.className = "status-banner pass";
-            banner.innerText = "PASS // DESIGN CONFIGURATION COMPLIANT & SAFE";
-        } else {
-            banner.className = "status-banner fail";
-            banner.innerText = geometricFailure ? "FAIL // GEOMETRIC CRITICAL FAILURE" : "FAIL // MATERIAL STRESS EXCEEDED OVERLOAD BREAK";
+        function launchEngine(mode) {
+            engineMode = mode;
+            document.getElementById('splash-screen').style.display = 'none';
+            document.getElementById('main-engine').classList.remove('hidden');
+            document.getElementById('mode-label').innerText = mode.toUpperCase() + " CONFIGURATION";
+            if(mode !== 'single') document.getElementById('multi-stage-inputs').classList.remove('hidden');
+            init();
+            updateDesign();
         }
 
-        // Generate dynamic text output stream trace log
-        let reportText = `[GEOMETRIC ANALYSIS]\n`;
-        reportText += `• Pinion Pitch Dia (d1): ${d1.toFixed(1)} mm | Root Dia: ${root_d1.toFixed(1)} mm\n`;
-        reportText += `• Gear Pitch Dia (d2): ${d2.toFixed(1)} mm | Root Dia: ${root_d2.toFixed(1)} mm\n`;
-        reportText += `• Center Core Profiling: Pinion Bore = ${dh1} mm, Gear Bore = ${dh2} mm\n\n`;
-        
-        reportText += `[LOAD & FORCE METRICS]\n`;
-        reportText += `• Pitch Velocity (v): ${v.toFixed(2)} m/s | Velocity Factor (Kv): ${Kv.toFixed(3)}\n`;
-        reportText += `• Pitch Line Tangential Force (Ft): ${Ft.toFixed(1)} N\n\n`;
-        
-        reportText += `[STRESS VERIFICATION SUITE]\n`;
-        reportText += `• Applied Bending Stress (σ): ${sigma_calc.toFixed(2)} MPa\n`;
-        reportText += `• Allowable Material Limit (σ_all): ${sigma_all} MPa\n`;
-        
-        if(!isSafe) {
-            reportText += `\n[CRITICAL WARNING - MATERIAL BREAK RISK]\n`;
-            if(geometricFailure) {
-                reportText += `⚠️ ALERT: ${failureReason}\n`;
-                reportText += `FIX: Reduce bore diameters or increase the module size to add back material volume.\n`;
-            } else {
-                reportText += `⚠️ ALERT: Applied Stress exceeds structural yield envelope bounds.\n`;
-                reportText += `FIX: 1. Increase Module size (m)\n`;
-                reportText += `     2. Increase Face width (b)\n`;
-                reportText += `     3. Upgrade material classification tier to Alloy Steel.\n`;
+        function init() {
+            const area = document.getElementById('render-area');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a); 
+            
+            camera = new THREE.PerspectiveCamera(38, area.clientWidth / area.clientHeight, 1, 2000);
+            camera.position.set(0, 160, 150);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(area.clientWidth, area.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            area.appendChild(renderer.domElement);
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            mainLight.position.set(50, 200, 50);
+            scene.add(mainLight);
+
+            gearGroup = new THREE.Group();
+            scene.add(gearGroup);
+            
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function onWindowResize() {
+            const area = document.getElementById('render-area');
+            camera.aspect = area.clientWidth / area.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(area.clientWidth, area.clientHeight);
+        }
+
+        function createGearMesh(z, m, x, baseBodyColor, yOffset = 0, zOffset = 0, speedFactor = 1, initialOffset = 0, targetMeshX = null) {
+            const r_pitch = (z * m) / 2;
+            const r_dedendum = r_pitch - 1.25 * m;
+            const thickness = 10 * m; 
+            const gearContainer = new THREE.Group(); 
+            
+            // Generate standard solid outer perimeter boundary ring profile
+            const bodyShape = new THREE.Shape();
+            bodyShape.absarc(0, 0, r_dedendum, 0, Math.PI * 2, false);
+            
+            // Structural Hollow Shaft configuration boundary definition paths (with structural Keyway alignment)
+            const shaftRadius = m * 2.5;
+            const keyWidth = m * 0.8;
+            const keyHeight = m * 0.5;
+            
+            const hollowShaftPath = new THREE.Path();
+            hollowShaftPath.moveTo(shaftRadius, -keyWidth / 2);
+            hollowShaftPath.lineTo(shaftRadius + keyHeight, -keyWidth / 2);
+            hollowShaftPath.lineTo(shaftRadius + keyHeight, keyWidth / 2);
+            hollowShaftPath.lineTo(shaftRadius, keyWidth / 2);
+            hollowShaftPath.absarc(0, 0, shaftRadius, Math.asin((keyWidth/2)/shaftRadius), Math.PI * 2 - Math.asin((keyWidth/2)/shaftRadius), false);
+            
+            bodyShape.holes.push(hollowShaftPath);
+
+            if (z > 20) {
+                const numHoles = 4;
+                const dist = r_dedendum * 0.55;
+                const holeRad = r_dedendum * 0.18;
+                for(let i=0; i<numHoles; i++) {
+                    const angle = (i / numHoles) * Math.PI * 2;
+                    const hPath = new THREE.Path();
+                    hPath.absarc(Math.cos(angle)*dist, Math.sin(angle)*dist, holeRad, 0, Math.PI*2, true);
+                    bodyShape.holes.push(hPath);
+                }
             }
-        } else {
-            reportText += `\n✔ Dynamic loading status is completely within healthy elastic structural margins.\n`;
+            
+            const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, { depth: thickness, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.2, segments: 64 });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: baseBodyColor, metalness: 0.5, roughness: 0.4 });
+            const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+            gearContainer.add(bodyMesh);
+
+            const toothWidthBottom = m * 1.571;
+            const toothWidthTop = m * 0.785;
+            const toothHeight = 2.25 * m;
+            const teethArray = [];
+
+            for (let i = 0; i < z; i++) {
+                const toothShape = new THREE.Shape();
+                toothShape.moveTo(-toothWidthBottom / 2, 0);
+                toothShape.lineTo(-toothWidthTop / 2, toothHeight);
+                toothShape.lineTo(toothWidthTop / 2, toothHeight);
+                toothShape.lineTo(toothWidthBottom / 2, 0);
+                
+                const toothGeo = new THREE.ExtrudeGeometry(toothShape, { depth: thickness, bevelEnabled: false });
+                
+                const colors = [];
+                const parsedBaseColor = new THREE.Color(baseBodyColor);
+                for(let c=0; c<toothGeo.attributes.position.count; c++) {
+                    colors.push(parsedBaseColor.r, parsedBaseColor.g, parsedBaseColor.b);
+                }
+                toothGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                
+                const toothMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.5, roughness: 0.3 });
+                const toothMesh = new THREE.Mesh(toothGeo, toothMat);
+                
+                const angle = (i / z) * Math.PI * 2;
+                toothMesh.position.x = Math.cos(angle) * r_dedendum;
+                toothMesh.position.y = Math.sin(angle) * r_dedendum;
+                toothMesh.rotation.z = angle - Math.PI / 2;
+                
+                bodyMesh.add(toothMesh);
+                teethArray.push({ mesh: toothMesh, geometry: toothGeo, baseAngle: angle });
+            }
+
+            gearContainer.position.set(x, yOffset, zOffset);
+            gearContainer.rotation.x = Math.PI / 2;
+            bodyMesh.rotation.z = initialOffset; 
+
+            activeGears.push({ 
+                obj: bodyMesh, 
+                speed: speedFactor, 
+                teeth: teethArray, 
+                globalX: x, 
+                globalZ: zOffset, 
+                targetMeshX: targetMeshX,
+                baseBodyColor: baseBodyColor,
+                z: z,
+                m: m
+            });
+
+            return gearContainer;
         }
 
-        reportText += `\n[MASS COMPLIANCE METRICS]\n`;
-        reportText += `• Pinion Net Mass: ${mass_p.toFixed(2)} kg\n`;
-        reportText += `• Driven Gear Net Mass: ${mass_g.toFixed(2)} kg\n`;
-        reportText += `• Total Steel Assembly Structural Mass: ${total_mass.toFixed(2)} kg`;
+        function rebuildTransparentCasing() {
+            if(transparentCasing) scene.remove(transparentCasing);
 
-        output.innerText = reportText;
-    }
+            const bounds = new THREE.Box3().setFromObject(gearGroup);
+            const size = new THREE.Vector3();
+            const center = new THREE.Vector3();
+            bounds.getSize(size);
+            bounds.getCenter(center);
 
-    function generatePDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
+            const padX = size.x + 12;
+            const padY = size.y + 8;
+            const padZ = size.z + 12;
 
-        const z1 = parseInt(document.getElementById('z1').value) || 20;
-        const z2 = parseInt(document.getElementById('z2').value) || 50;
-        const m = parseFloat(document.getElementById('module-sel').value) || 3;
-        const b = parseFloat(document.getElementById('face-width').value) || 30;
-        const p = document.getElementById('in-p').value;
-        const n = document.getElementById('in-n').value;
-        const stressMat = document.getElementById('material-stress').options[document.getElementById('material-stress').selectedIndex].text;
-        const toothProfile = document.getElementById('tooth-system').options[document.getElementById('tooth-system').selectedIndex].text;
-        
-        const dh1 = parseFloat(document.getElementById('bore-d1').value) || 0;
-        const dh2 = parseFloat(document.getElementById('bore-d2').value) || 0;
+            const boxGeo = new THREE.BoxGeometry(padX, padY, padZ);
+            const boxMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.12,
+                roughness: 0.1,
+                metalness: 0.1,
+                transmission: 0.6, 
+                ior: 1.45,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
 
-        const passStatus = document.getElementById('status-banner').innerText.includes('PASS');
-        const stressVal = document.getElementById('max-stress-label').innerText;
-        const weightVal = document.getElementById('total-weight-label').innerText;
+            transparentCasing = new THREE.Mesh(boxGeo, boxMat);
+            transparentCasing.position.copy(center);
+            
+            const wireframeGeo = new THREE.EdgesGeometry(boxGeo);
+            const wireframeMat = new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 1 });
+            const wireframeLines = new THREE.LineSegments(wireframeGeo, wireframeMat);
+            transparentCasing.add(wireframeLines);
 
-        // Draw PDF Header Block Context
-        doc.setFillColor(15, 23, 42); 
-        doc.rect(0, 0, 210, 32, 'F');
-        
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("Helvetica", "bold");
-        doc.setFontSize(22);
-        doc.text("SpurGear Pro", 14, 15);
-        
-        doc.setFont("Helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(148, 163, 184);
-        doc.text(`INDUSTRIAL GEARBOX DESIGN REPORT // WEIGHT & STRESS ANALYTICS`, 14, 22);
-        doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 14, 26);
-
-        // Section 1 Parameters Block
-        doc.setFont("Helvetica", "bold");
-        doc.setFontSize(12);
-        doc.setTextColor(30, 41, 59);
-        doc.text("1. Input Design Metrics & Hollow Core Limits", 14, 45);
-        
-        doc.setStrokeColor(226, 232, 240);
-        doc.setLineWidth(0.5);
-        doc.line(14, 48, 196, 48);
-
-        doc.setFont("Helvetica", "normal");
-        doc.setFontSize(10);
-        doc.setTextColor(71, 85, 105);
-        
-        doc.text(`• Selected Module (m): ${m} mm`, 16, 56);
-        doc.text(`• Pinion Teeth (Z1): ${z1} | Bore: ${dh1} mm`, 16, 63);
-        doc.text(`• Driven Gear Teeth (Z2): ${z2} | Bore: ${dh2} mm`, 16, 70);
-        doc.text(`• Tooth Configuration: ${toothProfile}`, 16, 77);
-
-        doc.text(`• Nominal Input Power: ${p} kW`, 110, 56);
-        doc.text(`• Pinion Velocity: ${n} RPM`, 110, 63);
-        doc.text(`• Structural Material: ${stressMat}`, 110, 70);
-        doc.text(`• Calculated Assembly Mass: ${weightVal}`, 110, 77);
-
-        // Section 2 Interactive Stage Graphics Canvas Mock
-        doc.setFont("Helvetica", "bold");
-        doc.setFontSize(12);
-        doc.setTextColor(30, 41, 59);
-        doc.text("2. Primary Stage Structural Cross-Section Layout", 14, 92);
-        doc.line(14, 95, 196, 95);
-
-        const r1 = (z1 * m) / 2;
-        const r2 = (z2 * m) / 2;
-        const centerDistance = r1 + r2;
-        
-        const maxAllowedRadius = 35; 
-        const largestRealRadius = Math.max(r1, r2);
-        const scale = maxAllowedRadius / largestRealRadius;
-        
-        const p1_r = r1 * scale;
-        const p2_r = r2 * scale;
-        const canvasCenterX = 65; 
-        const canvasCenterY = 140; 
-        const p2_cx = canvasCenterX + (centerDistance * scale);
-
-        // Pinion Render
-        doc.setStrokeColor(30, 64, 175); 
-        doc.setLineWidth(0.6);
-        doc.circle(canvasCenterX, canvasCenterY, p1_r, 'S');
-        if(dh1 > 0) {
-            doc.setStrokeColor(148, 163, 184);
-            doc.circle(canvasCenterX, canvasCenterY, (dh1 / 2) * scale, 'S');
+            scene.add(transparentCasing);
         }
-        doc.circle(canvasCenterX, canvasCenterY, 1.0, 'F'); 
-        
-        // Gear Render
-        doc.setStrokeColor(6, 95, 70); 
-        doc.circle(p2_cx, canvasCenterY, p2_r, 'S');
-        if(dh2 > 0) {
-            doc.setStrokeColor(148, 163, 184);
-            doc.circle(p2_cx, canvasCenterY, (dh2 / 2) * scale, 'S');
+
+        function updateDesign() {
+            if(!gearGroup) return;
+            while(gearGroup.children.length > 0) gearGroup.remove(gearGroup.children[0]);
+            activeGears = [];
+            document.getElementById('weight-display').classList.add('hidden');
+            
+            const z1 = Math.max(1, parseInt(document.getElementById('z1').value) || 1);
+            const z2 = Math.max(1, parseInt(document.getElementById('z2').value) || 1);
+            const z3 = Math.max(1, parseInt(document.getElementById('z3').value) || 1);
+            const z4 = Math.max(1, parseInt(document.getElementById('z4').value) || 1);
+            const m = parseFloat(document.getElementById('module-sel').value);
+            const p = parseFloat(document.getElementById('in-p').value) || 0;
+            const n1 = parseFloat(document.getElementById('in-n').value) || 1;
+            const toothType = document.getElementById('tooth-system').value;
+            const errorVal = document.getElementById('gear-error').value;
+            const matPair = document.getElementById('mat-pair').value;
+            const sigma0 = parseFloat(document.getElementById('material-stress').value);
+            const cs = serviceFactorTable[document.getElementById('load-type').value][document.getElementById('service-type').value];
+            const C = dynamicFactorC[toothType][matPair][errorVal];
+
+            const d1 = z1 * m;
+            const d2 = z2 * m;
+            const b = 10 * m;
+            const gearRatio = z2 / z1;
+            
+            const speedStep1 = (3.1416 * d1 * n1).toFixed(2);
+            const v = parseFloat((speedStep1 / 60000).toFixed(3));
+            
+            const forceStep1 = 1000 * p;
+            const ft = parseFloat((forceStep1 / v).toFixed(2));
+            const ftEff = parseFloat((ft * cs).toFixed(2));
+            
+            const getY = (z) => (toothType === "20") ? 0.154 - (0.912/z) : (toothType === "20stub" ? 0.175 - (0.841/z) : 0.124 - (0.684/z));
+            const y1 = getY(z1), y2 = getY(z2);
+            const designY = (y1 <= y2) ? y1 : y2;
+
+            const strengthStep1 = (sigma0 * b).toFixed(2);
+            const strengthStep2 = (strengthStep1 * 3.1416).toFixed(2);
+            const strengthStep3 = (strengthStep2 * m).toFixed(2);
+            const fs = parseFloat((strengthStep3 * designY).toFixed(2));
+
+            const term1 = parseFloat((21 * v).toFixed(2));
+            const term2 = parseFloat(((b * C) + ftEff).toFixed(2));
+            const numFd = parseFloat((term1 * term2).toFixed(2));
+            const denFd = parseFloat((term1 + Math.sqrt(term2)).toFixed(2));
+            const fd = parseFloat((ftEff + (numFd / denFd)).toFixed(2));
+
+            const bendingStress = (b * m * designY > 0) ? (ftEff / (b * m * designY)) : 0;
+            document.getElementById('max-stress-label').innerText = bendingStress.toFixed(1) + " MPa";
+
+            const mesh1Center = (d1 + d2) / 2;
+            if(engineMode === 'single') {
+                gearGroup.add(createGearMesh(z1, m, 0, structuralPalette.pinion, 0, 0, 1, 0, mesh1Center));
+                gearGroup.add(createGearMesh(z2, m, mesh1Center, structuralPalette.driven, 0, 0, -1/gearRatio, Math.PI/z2, 0));
+            } else if (engineMode === 'double') {
+                const d3 = z3 * m, d4 = z4 * m;
+                const mesh2Center = mesh1Center + (d3 + d4) / 2;
+                gearGroup.add(createGearMesh(z1, m, 0, structuralPalette.pinion, 0, 0, 1, 0, mesh1Center));
+                gearGroup.add(createGearMesh(z2, m, mesh1Center, structuralPalette.driven, 0, 0, -1/gearRatio, Math.PI/z2, 0));
+                gearGroup.add(createGearMesh(z3, m, mesh1Center, structuralPalette.inter, 0, d2, -1/gearRatio, 0, mesh2Center));
+                gearGroup.add(createGearMesh(z4, m, mesh2Center, structuralPalette.output, 0, d2, (1/gearRatio)*(z3/z4), Math.PI/z4, mesh1Center));
+            } else if (engineMode === 'compound') {
+                const d3 = z3 * m, d4 = z4 * m;
+                gearGroup.add(createGearMesh(z1, m, 0, structuralPalette.pinion, 0, 0, 1, 0, mesh1Center));
+                gearGroup.add(createGearMesh(z2, m, mesh1Center, structuralPalette.driven, 0, 0, -1/gearRatio, Math.PI/z2, 0));
+                gearGroup.add(createGearMesh(z3, m, mesh1Center, structuralPalette.inter, b + 4, 0, -1/gearRatio, 0, mesh1Center + (d3+d4)/2)); 
+                gearGroup.add(createGearMesh(z4, m, mesh1Center + (d3 + d4)/2, structuralPalette.output, b + 4, 0, (1/gearRatio)*(z3/z4), Math.PI/z4, mesh1Center));
+            }
+
+            rebuildTransparentCasing();
+
+            const isSafe = fs > fd;
+            const safetyStatus = isSafe ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
+            
+            // Dynamic generation of architectural redesign fixes when the validation status returns a failure
+            let structuralRemediesHTML = '';
+            if(!isSafe) {
+                structuralRemediesHTML = `
+                    <div class="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-amber-300 space-y-2 calc-card">
+                        <b class="text-[9px] uppercase tracking-wider block text-amber-400">⚠️ Material Fracture Structural Remedies</b>
+                        <p class="text-[10px] leading-relaxed">The current dynamic shock load exceeds your safe structural threshold limit. Implement the following physical design adjustments:</p>
+                        <ul class="list-disc pl-4 space-y-1 text-[10px] text-slate-300">
+                            <li><span class="text-amber-400 font-bold">Increase Module:</span> Scale up module size (m) to widen tooth profiles and scale the root fillet footprint.</li>
+                            <li><span class="text-amber-400 font-bold">Material Upgrade:</span> Select Alloy Steel or Steel C45 to increase allowable bending stress thresholds ($\sigma_0$).</li>
+                            <li><span class="text-amber-400 font-bold">Optimize Geometry:</span> Increase Pinion Tooth Count (Z1) to elevate the structural form factor factor (Y).</li>
+                            <li><span class="text-amber-400 font-bold">Mitigate Dynamic Error:</span> Move to standard Class I errors to minimize the total Buckingham impact shock vector.</li>
+                        </ul>
+                    </div>
+                `;
+            }
+
+            const output = document.getElementById('step-output');
+            output.innerHTML = `
+                <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Velocity</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1">
+                        <div>1) Pinion Diameter = ${z1} × ${m} = ${d1} mm</div>
+                        <div>2) Velocity Equation = (3.1416 × ${d1} × ${n1}) ÷ 60000</div>
+                        <div>3) Velocity Step = ${speedStep1} ÷ 60000</div>
+                        <div>4) Final Velocity = <span class="text-blue-400">${v} m/s</span></div>
+                    </div>
+                </div>
+
+                <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Force Pushing Teeth (Ft)</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1">
+                        <div>1) Baseline Calculation = (1000 × ${p}) ÷ ${v}</div>
+                        <div>2) Baseline Calculation = ${forceStep1} ÷ ${v} = <span class="text-blue-400">${ft.toFixed(2)} N</span></div>
+                        <div>3) Shock Calculation = ${ft.toFixed(2)} × ${cs} (Service Factor)</div>
+                        <div>4) Final Effective Force = <span class="text-emerald-400">${ftEff.toFixed(2)} N</span></div>
+                    </div>
+                </div>
+
+                <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Tooth Size Factor (Y)</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1">
+                        <div>1) Pinion Profile = 0.154 - (0.912 ÷ ${z1}) = ${y1.toFixed(4)}</div>
+                        <div>2) Driven Gear Profile = 0.154 - (0.912 ÷ ${z2}) = ${y2.toFixed(4)}</div>
+                        <div>3) Selected Smallest Profile = <span class="text-amber-400">${designY.toFixed(4)}</span></div>
+                    </div>
+                </div>
+
+                <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Metal Breaking Limit (Fs)</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1">
+                        <div>1) Width size = 10 × ${m} = ${b} mm</div>
+                        <div>2) Maximum Metal Limit = ${sigma0} × ${b} × 3.1416 × ${m} × ${designY.toFixed(4)}</div>
+                        <div>3) ${strengthStep1} × 3.1416 × ${m} × ${designY.toFixed(4)}</div>
+                        <div>4) ${strengthStep2} × ${m} × ${designY.toFixed(4)}</div>
+                        <div>5) ${strengthStep3} × ${designY.toFixed(4)}</div>
+                        <div>6) Final Strength Limit = <span class="text-blue-400">${fs.toFixed(2)} N</span></div>
+                    </div>
+                </div>
+
+                <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Dynamic Shock Speed Load (Fd)</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1 text-[10px]">
+                        <div>1) Velocity Part = 21 × ${v} = ${term1}</div>
+                        <div>2) Friction Part = (${b} × ${C}) + ${ftEff} = ${term2}</div>
+                        <div>3) Top Line = ${term1} × ${term2} = ${numFd}</div>
+                        <div>4) Bottom Line = ${term1} + √${term2} = ${denFd}</div>
+                        <div>5) Final Shock Speed Load = ${ftEff} + (${numFd} ÷ ${denFd}) = <span class="text-blue-400">${fd.toFixed(2)} N</span></div>
+                    </div>
+                </div>
+
+                <div class="calc-card p-3 border rounded-md ${safetyStatus}">
+                    <b class="uppercase text-[9px] block mb-1">Security Verification</b>
+                    <div>Bending Stress: <span class="font-bold">${bendingStress.toFixed(1)} MPa</span></div>
+                    <div>Is Metal Limit (${fs.toFixed(1)} N) > Actual Shock Load (${fd.toFixed(1)} N)?</div>
+                    <div class="mt-2 pt-1.5 border-t border-white/10 text-[10px] uppercase font-bold tracking-wider">
+                        STATUS: ${isSafe ? 'PASS // SAFE TO OPERATE' : 'FAIL // MATERIAL WILL BREAK'}
+                    </div>
+                </div>
+                ${structuralRemediesHTML}
+            `;
         }
-        doc.circle(p2_cx, canvasCenterY, 1.0, 'F'); 
 
-        // Cross Section Graphical Labels
-        doc.setFont("Helvetica", "bold");
-        doc.setFontSize(8);
-        doc.setTextColor(30, 64, 175);
-        doc.text(`Pinion (Z1=${z1})`, canvasCenterX - 12, canvasCenterY - p1_r - 4);
-        doc.text(`d1 = ${(r1*2).toFixed(1)}mm`, canvasCenterX - 12, canvasCenterY - p1_r - 0.5);
+        // Mass calculation logic based on material densities
+        function calculateSystemWeight() {
+            const matPair = document.getElementById('mat-pair').value;
+            // Densities in g/cm3 (Steel: 7.85, Cast Iron: 7.20)
+            const rhoPinion = matPair.startsWith("ST") ? 7.85 : 7.20;
+            const rhoGear = (matPair === "ST_ST" || matPair === "CI_ST") ? 7.85 : 7.20;
+            
+            let totalMass = 0;
+            
+            activeGears.forEach((gear, idx) => {
+                const r_pitch = (gear.z * gear.m) / 2;
+                const r_dedendum = r_pitch - 1.25 * gear.m;
+                const thickness = 10 * gear.m;
+                const shaftRadius = gear.m * 2.5;
+                
+                // Outer body cylinder volume (converted to cm3)
+                const baseVolume = Math.PI * (Math.pow(r_dedendum / 10, 2) - Math.pow(shaftRadius / 10, 2)) * (thickness / 10);
+                
+                // Volume adjustments for web holes
+                let holesVolume = 0;
+                if (gear.z > 20) {
+                    const numHoles = 4;
+                    const holeRad = r_dedendum * 0.18;
+                    holesVolume = numHoles * Math.PI * Math.pow(holeRad / 10, 2) * (thickness / 10);
+                }
+                
+                // Approximate tooth profile mass extensions
+                const singleToothVol = ( (gear.m*1.571 + gear.m*0.785)/2 ) * (2.25*gear.m) * thickness / 1000;
+                const totalTeethVolume = singleToothVol * gear.z;
+                
+                const finalVolume = Math.max(0.1, (baseVolume - holesVolume) + totalTeethVolume);
+                const currentRho = (idx === 0 || (engineMode !== 'single' && idx === 2)) ? rhoPinion : rhoGear;
+                const componentMass = (finalVolume * currentRho) / 1000; // Convert to kilograms
+                
+                totalMass += componentMass;
+                
+                if(idx === 0) document.getElementById('w-z1').innerText = componentMass.toFixed(2) + " kg";
+                if(idx === 1) document.getElementById('w-z2').innerText = componentMass.toFixed(2) + " kg";
+                if(idx === 2) document.getElementById('w-z3').innerText = componentMass.toFixed(2) + " kg";
+                if(idx === 3) document.getElementById('w-z4').innerText = componentMass.toFixed(2) + " kg";
+            });
 
-        doc.setTextColor(6, 95, 70);
-        doc.text(`Driven Gear (Z2=${z2})`, p2_cx - 14, canvasCenterY - p2_r - 4);
-        doc.text(`d2 = ${(r2*2).toFixed(1)}mm`, p2_cx - 14, canvasCenterY - p2_r - 0.5);
+            const stage2Box = document.getElementById('w-stage2');
+            if(engineMode !== 'single') {
+                stage2Box.classList.remove('hidden');
+            } else {
+                stage2Box.classList.add('hidden');
+            }
+            
+            document.getElementById('w-total').innerText = totalMass.toFixed(2) + " kg";
+            document.getElementById('weight-display').classList.remove('hidden');
+        }
 
-        doc.setTextColor(71, 85, 105);
-        doc.setFont("Helvetica", "normal");
-        doc.text(`Center Distance: ${centerDistance.toFixed(2)} mm`, canvasCenterX + 5, canvasCenterY + 42);
+        function animate() {
+            requestAnimationFrame(animate);
+            if(isAnimating && activeGears.length > 0) {
+                const deltaRotation = 0.01;
+                activeGears.forEach(gear => {
+                    gear.obj.rotation.z += deltaRotation * gear.speed;
+                });
+            }
+            if(controls) controls.update();
+            if(renderer && scene && camera) renderer.render(scene, camera);
+        }
 
-        // Section 3 Compliance Validation Output
-        doc.setFont("Helvetica", "bold");
-        doc.setFontSize(12);
-        doc.setTextColor(30, 41, 59);
-        doc.text("3. Structural Bending Compliance & Deflection Status", 14, 195);
-        doc.line(14, 198, 196, 198);
-
-        if (passStatus) {
-            doc.setFillColor(209, 250, 229); 
-            doc.setStrokeColor(16, 185, 129);
-            doc.rect(14, 204, 182, 18, 'DF');
-            doc.setTextColor(6, 95, 70);
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 297, 'F');
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(20);
+            doc.setTextColor(59, 130, 246);
+            doc.text("SpurGear Pro // Design Evaluation", 20, 30);
+            
             doc.setFontSize(10);
-            doc.text(`PASS // COMBINED LOADING ENVELOPE STABLE. APPLIED STRESS: ${stressVal}`, 20, 215);
-        } else {
-            doc.setFillColor(254, 226, 226); 
-            doc.setStrokeColor(239, 68, 68);
-            doc.rect(14, 204, 182, 18, 'DF');
-            doc.setTextColor(153, 27, 27);
+            doc.setFont("courier", "normal");
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Timestamp: ${new Date().toLocaleString()}`, 20, 40);
+            doc.text(`Train Layout: ${engineMode.toUpperCase()}`, 20, 46);
+            
+            doc.setStrokeColor(51, 65, 85);
+            doc.line(20, 52, 190, 52);
+            
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(255, 255, 255);
+            doc.text("CRITICAL MECHANICAL CONSTRAINTS", 20, 65);
+            
+            let yPos = 78;
             doc.setFontSize(10);
-            doc.text(`FAIL // SPECIFIED ENVELOPE EXCEEDS LIMITS or ROOT REINFORCEMENT CRITICAL`, 20, 215);
+            doc.setFont("courier", "bold");
+            doc.setTextColor(203, 213, 225);
+            
+            const records = [
+                `Pinion Tooth Profile Configuration (Z1): ${document.getElementById('z1').value}`,
+                `Driven Gear Tooth Profile Configuration (Z2): ${document.getElementById('z2').value}`,
+                `Pitch Line Module Dimension: ${document.getElementById('module-sel').value} mm`,
+                `Input Structural Power Vector: ${document.getElementById('in-p').value} kW`,
+                `Max Bending Stress Checked: ${document.getElementById('max-stress-label').innerText}`
+            ];
+            
+            records.forEach(row => {
+                doc.text(`> ${row}`, 22, yPos);
+                yPos += 9;
+            });
+            
+            doc.save(`SpurGearPro-SystemReport.pdf`);
         }
-
-        // Footer Information
-        doc.setFont("Helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(148, 163, 184);
-        doc.text("SpurGear Pro Solid Mechanics Verification Suite Engine. Calculated via exact Modified Lewis Formula metrics.", 14, 285);
-
-        doc.save(`SpurGearPro-WeightReport-${Date.now()}.pdf`);
-    }
-</script>
-
+    </script>
 </body>
 </html>

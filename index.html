@@ -68,7 +68,7 @@
                 <h1 class="text-xs font-bold tracking-widest uppercase text-slate-200">SpurGear Pro // <span id="mode-label" class="text-blue-400">--</span></h1>
             </div>
             <button onclick="generatePDF()" class="bg-blue-600 text-white text-[10px] px-5 py-2 rounded-md font-bold tracking-wider hover:bg-blue-500 shadow-sm transition">
-                EXPORT SYSTEM REPORT WITH 2D SKETCH (PDF)
+                EXPORT SYSTEM REPORT (PDF)
             </button>
         </header>
 
@@ -300,11 +300,10 @@
             const thickness = 10 * m; 
             const gearContainer = new THREE.Group(); 
             
-            // Generate standard solid outer perimeter boundary ring profile
             const bodyShape = new THREE.Shape();
             bodyShape.absarc(0, 0, r_dedendum, 0, Math.PI * 2, false);
             
-            // Structural Hollow Shaft configuration boundary definition paths (with structural Keyway alignment)
+            // Explicit Hollow Shaft implementation with geometric keyway cuts nested inside the shape rules
             const shaftRadius = m * 2.5;
             const keyWidth = m * 0.8;
             const keyHeight = m * 0.5;
@@ -498,7 +497,6 @@
             const isSafe = fs > fd;
             const safetyStatus = isSafe ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
             
-            // Dynamic generation of architectural redesign fixes when the validation status returns a failure
             let structuralRemediesHTML = '';
             if(!isSafe) {
                 structuralRemediesHTML = `
@@ -581,10 +579,8 @@
             `;
         }
 
-        // Mass calculation logic based on material densities
         function calculateSystemWeight() {
             const matPair = document.getElementById('mat-pair').value;
-            // Densities in g/cm3 (Steel: 7.85, Cast Iron: 7.20)
             const rhoPinion = matPair.startsWith("ST") ? 7.85 : 7.20;
             const rhoGear = (matPair === "ST_ST" || matPair === "CI_ST") ? 7.85 : 7.20;
             
@@ -596,10 +592,8 @@
                 const thickness = 10 * gear.m;
                 const shaftRadius = gear.m * 2.5;
                 
-                // Outer body cylinder volume (converted to cm3)
                 const baseVolume = Math.PI * (Math.pow(r_dedendum / 10, 2) - Math.pow(shaftRadius / 10, 2)) * (thickness / 10);
                 
-                // Volume adjustments for web holes
                 let holesVolume = 0;
                 if (gear.z > 20) {
                     const numHoles = 4;
@@ -607,13 +601,12 @@
                     holesVolume = numHoles * Math.PI * Math.pow(holeRad / 10, 2) * (thickness / 10);
                 }
                 
-                // Approximate tooth profile mass extensions
                 const singleToothVol = ( (gear.m*1.571 + gear.m*0.785)/2 ) * (2.25*gear.m) * thickness / 1000;
                 const totalTeethVolume = singleToothVol * gear.z;
                 
                 const finalVolume = Math.max(0.1, (baseVolume - holesVolume) + totalTeethVolume);
                 const currentRho = (idx === 0 || (engineMode !== 'single' && idx === 2)) ? rhoPinion : rhoGear;
-                const componentMass = (finalVolume * currentRho) / 1000; // Convert to kilograms
+                const componentMass = (finalVolume * currentRho) / 1000;
                 
                 totalMass += componentMass;
                 
@@ -646,51 +639,69 @@
             if(renderer && scene && camera) renderer.render(scene, camera);
         }
 
+        // Completely rebuilt PDF configuration block to fix browser block exceptions
         function generatePDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFillColor(15, 23, 42);
-            doc.rect(0, 0, 210, 297, 'F');
-            
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(20);
-            doc.setTextColor(59, 130, 246);
-            doc.text("SpurGear Pro // Design Evaluation", 20, 30);
-            
-            doc.setFontSize(10);
-            doc.setFont("courier", "normal");
-            doc.setTextColor(148, 163, 184);
-            doc.text(`Timestamp: ${new Date().toLocaleString()}`, 20, 40);
-            doc.text(`Train Layout: ${engineMode.toUpperCase()}`, 20, 46);
-            
-            doc.setStrokeColor(51, 65, 85);
-            doc.line(20, 52, 190, 52);
-            
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(255, 255, 255);
-            doc.text("CRITICAL MECHANICAL CONSTRAINTS", 20, 65);
-            
-            let yPos = 78;
-            doc.setFontSize(10);
-            doc.setFont("courier", "bold");
-            doc.setTextColor(203, 213, 225);
-            
-            const records = [
-                `Pinion Tooth Profile Configuration (Z1): ${document.getElementById('z1').value}`,
-                `Driven Gear Tooth Profile Configuration (Z2): ${document.getElementById('z2').value}`,
-                `Pitch Line Module Dimension: ${document.getElementById('module-sel').value} mm`,
-                `Input Structural Power Vector: ${document.getElementById('in-p').value} kW`,
-                `Max Bending Stress Checked: ${document.getElementById('max-stress-label').innerText}`
-            ];
-            
-            records.forEach(row => {
-                doc.text(`> ${row}`, 22, yPos);
-                yPos += 9;
-            });
-            
-            doc.save(`SpurGearPro-SystemReport.pdf`);
+            try {
+                const { jsPDF } = window.jspdf;
+                if (!jsPDF) {
+                    alert("PDF Engine is loading. Please click again in a brief second.");
+                    return;
+                }
+                
+                const doc = new jsPDF({
+                    orientation: "p",
+                    unit: "mm",
+                    format: "a4"
+                });
+                
+                // Dark background aesthetic layer 
+                doc.setFillColor(15, 23, 42);
+                doc.rect(0, 0, 210, 297, 'F');
+                
+                // Typography headers
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(22);
+                doc.setTextColor(59, 130, 246);
+                doc.text("SpurGear Pro Calculations Report", 20, 35);
+                
+                doc.setFontSize(10);
+                doc.setFont("courier", "normal");
+                doc.setTextColor(148, 163, 184);
+                doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 45);
+                doc.text(`Configuration Mode: ${engineMode.toUpperCase()}`, 20, 51);
+                
+                doc.setStrokeColor(51, 65, 85);
+                doc.line(20, 58, 190, 58);
+                
+                doc.setFontSize(13);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(255, 255, 255);
+                doc.text("ENGINEERING DESIGN METRICS", 20, 72);
+                
+                let yPos = 85;
+                doc.setFontSize(10);
+                doc.setFont("courier", "bold");
+                doc.setTextColor(203, 213, 225);
+                
+                const lines = [
+                    `Pinion Teeth Count (Z1): ${document.getElementById('z1').value}`,
+                    `Driven Gear Teeth Count (Z2): ${document.getElementById('z2').value}`,
+                    `Module Pitch Step Value (m): ${document.getElementById('module-sel').value} mm`,
+                    `Nominal Drive Power (P): ${document.getElementById('in-p').value} kW`,
+                    `Calculated Structural Bending Stress: ${document.getElementById('max-stress-label').innerText}`
+                ];
+                
+                lines.forEach(line => {
+                    doc.text(`* ${line}`, 22, yPos);
+                    yPos += 10;
+                });
+                
+                // Force file generation save execution stream directly
+                doc.save(`SpurGearPro-Report-${engineMode}.pdf`);
+            } catch (err) {
+                console.error("PDF engine crash caught:", err);
+                alert("Error compiling document metrics. Check element properties.");
+            }
         }
     </script>
 </body>

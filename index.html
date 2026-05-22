@@ -96,11 +96,11 @@
                 <section>
                     <label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Material Stress Limit</label>
                     <select id="material-stress" class="mt-1" onchange="updateDesign()">
-                        <option value="47.1" data-density="7.2">Cast Iron Grade 20 (47.1 MPa)</option>
-                        <option value="78.5" data-density="7.3">Cast Iron Grade 35 (78.5 MPa)</option>
-                        <option value="138.3" data-density="7.8">Cast Steel (138.3 MPa)</option>
-                        <option value="233.4" data-density="7.85" selected>Steel C45 (233.4 MPa)</option>
-                        <option value="345.2" data-density="7.9">Alloy Steel (345.2 MPa)</option>
+                        <option value="47.1">Cast Iron Grade 20 (47.1 MPa)</option>
+                        <option value="78.5">Cast Iron Grade 35 (78.5 MPa)</option>
+                        <option value="138.3">Cast Steel (138.3 MPa)</option>
+                        <option value="233.4" selected>Steel C45 (233.4 MPa)</option>
+                        <option value="345.2">Alloy Steel (345.2 MPa)</option>
                     </select>
                 </section>
 
@@ -174,19 +174,6 @@
                     <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Z3 (Stage 2 Pinion)</label><input type="number" id="z3" value="18" class="mt-1" oninput="updateDesign()"></div>
                     <div><label class="text-[9px] text-slate-400 uppercase font-bold tracking-wide">Z4 (Stage 2 Gear)</label><input type="number" id="z4" value="45" class="mt-1" oninput="updateDesign()"></div>
                 </div>
-
-                <!-- Mass Analysis Expansion Block -->
-                <div class="border-t pt-3 border-slate-800 space-y-2">
-                    <div id="weight-modal-panel" class="text-[10px] mono bg-slate-900/80 border border-slate-700/60 p-3 rounded-md space-y-1.5 text-slate-300">
-                        <div class="text-blue-400 font-bold uppercase text-[9px] border-b border-slate-800 pb-1 flex justify-between">
-                            <span>Assembly Mass Output</span>
-                            <span id="density-indicator" class="text-slate-400 font-normal"></span>
-                        </div>
-                        <div class="flex justify-between"><span>Gear Matrix Volume:</span><span id="w-gvol" class="text-white">0.00 cc</span></div>
-                        <div class="flex justify-between"><span>Drive Shaft Volume:</span><span id="w-svol" class="text-white">0.00 cc</span></div>
-                        <div class="flex justify-between font-bold border-t border-slate-800/80 pt-1"><span>Total Unit Weight:</span><span id="w-total" class="text-amber-400">0.00 kg</span></div>
-                    </div>
-                </div>
             </aside>
 
             <!-- 3D Render Area -->
@@ -209,8 +196,6 @@
         let scene, camera, renderer, controls, gearGroup, engineMode, transparentCasing;
         let activeGears = []; 
         let isAnimating = true;
-        let currentCalculatedVolumeGears = 0;
-        let currentCalculatedVolumeShafts = 0;
 
         const structuralPalette = {
             pinion: 0x1e40af,    
@@ -296,14 +281,12 @@
             const thickness = 10 * m; 
             const gearContainer = new THREE.Group(); 
             
-            const holeRadius = m * 2.5;
             const bodyShape = new THREE.Shape();
             bodyShape.absarc(0, 0, r_dedendum, 0, Math.PI * 2, false);
             const centerHole = new THREE.Path();
-            centerHole.absarc(0, 0, holeRadius, 0, Math.PI * 2, true);
+            centerHole.absarc(0, 0, m * 2.5, 0, Math.PI * 2, true);
             bodyShape.holes.push(centerHole);
 
-            let intermediateHolesVol = 0;
             if (z > 20) {
                 const numHoles = 4;
                 const dist = r_dedendum * 0.55;
@@ -313,7 +296,6 @@
                     const hPath = new THREE.Path();
                     hPath.absarc(Math.cos(angle)*dist, Math.sin(angle)*dist, holeRad, 0, Math.PI*2, true);
                     bodyShape.holes.push(hPath);
-                    intermediateHolesVol += Math.PI * Math.pow(holeRad, 2) * thickness;
                 }
             }
             
@@ -326,10 +308,6 @@
             const toothWidthTop = m * 0.785;
             const toothHeight = 2.25 * m;
             const teethArray = [];
-
-            let totalTeethVolume = 0;
-            const toothAvgWidth = (toothWidthBottom + toothWidthTop) / 2;
-            const approximateSingleToothVol = toothAvgWidth * toothHeight * thickness;
 
             for (let i = 0; i < z; i++) {
                 const toothShape = new THREE.Shape();
@@ -357,21 +335,7 @@
                 
                 bodyMesh.add(toothMesh);
                 teethArray.push({ mesh: toothMesh, geometry: toothGeo, baseAngle: angle });
-                totalTeethVolume += approximateSingleToothVol;
             }
-
-            const shaftLength = thickness + (20 * m); 
-            const shaftGeo = new THREE.CylinderGeometry(holeRadius, holeRadius, shaftLength, 32);
-            const shaftMat = new THREE.MeshStandardMaterial({ color: baseBodyColor, metalness: 0.7, roughness: 0.2 });
-            const shaftMesh = new THREE.Mesh(shaftGeo, shaftMat);
-            
-            shaftMesh.rotation.x = Math.PI / 2;
-            shaftMesh.position.z = thickness / 2;
-            gearContainer.add(shaftMesh);
-
-            const rawBodyVolume = (Math.PI * Math.pow(r_dedendum, 2) * thickness) - (Math.PI * Math.pow(holeRadius, 2) * thickness) - intermediateHolesVol;
-            currentCalculatedVolumeGears += (rawBodyVolume + totalTeethVolume) / 1000;
-            currentCalculatedVolumeShafts += (Math.PI * Math.pow(holeRadius, 2) * shaftLength) / 1000;
 
             gearContainer.position.set(x, yOffset, zOffset);
             gearContainer.rotation.x = Math.PI / 2;
@@ -390,19 +354,6 @@
             return gearContainer;
         }
 
-        function calculateAssemblyWeight() {
-            const materialSelect = document.getElementById('material-stress');
-            const selectedOpt = materialSelect.options[materialSelect.selectedIndex];
-            const density = parseFloat(selectedOpt.getAttribute('data-density')); 
-
-            const totalWeightKg = ((currentCalculatedVolumeGears + currentCalculatedVolumeShafts) * density) / 1000;
-
-            document.getElementById('density-indicator').innerText = `${density.toFixed(2)} g/cm³`;
-            document.getElementById('w-gvol').innerText = `${currentCalculatedVolumeGears.toFixed(2)} cm³`;
-            document.getElementById('w-svol').innerText = `${currentCalculatedVolumeShafts.toFixed(2)} cm³`;
-            document.getElementById('w-total').innerText = `${totalWeightKg.toFixed(3)} kg`;
-        }
-
         function rebuildTransparentCasing() {
             if(transparentCasing) scene.remove(transparentCasing);
 
@@ -412,6 +363,7 @@
             bounds.getSize(size);
             bounds.getCenter(center);
 
+            // Expand casing buffer parameters around components
             const padX = size.x + 12;
             const padY = size.y + 8;
             const padZ = size.z + 12;
@@ -432,6 +384,7 @@
             transparentCasing = new THREE.Mesh(boxGeo, boxMat);
             transparentCasing.position.copy(center);
             
+            // Generate clear structural outer wireframe bounds
             const wireframeGeo = new THREE.EdgesGeometry(boxGeo);
             const wireframeMat = new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 1 });
             const wireframeLines = new THREE.LineSegments(wireframeGeo, wireframeMat);
@@ -445,9 +398,6 @@
             while(gearGroup.children.length > 0) gearGroup.remove(gearGroup.children[0]);
             activeGears = [];
             
-            currentCalculatedVolumeGears = 0;
-            currentCalculatedVolumeShafts = 0;
-
             const z1 = Math.max(1, parseInt(document.getElementById('z1').value) || 1);
             const z2 = Math.max(1, parseInt(document.getElementById('z2').value) || 1);
             const z3 = Math.max(1, parseInt(document.getElementById('z3').value) || 1);
@@ -512,7 +462,6 @@
             }
 
             rebuildTransparentCasing();
-            calculateAssemblyWeight();
 
             const isSafe = fs > fd;
             const safetyStatus = isSafe ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
@@ -520,80 +469,223 @@
             const output = document.getElementById('step-output');
             output.innerHTML = `
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <span class="text-blue-400 font-bold uppercase tracking-wider text-[9px]">Step 1: Pitch Line Velocity (v)</span>
-                    <p class="text-slate-300 mt-1">v = (π × d1 × n1) / 60000 = (π × ${d1} × ${n1}) / 60000 = <span class="text-white font-bold">${v} m/s</span></p>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Velocity</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1">
+                        <div>1) Pinion Diameter = ${z1} × ${m} = ${d1} mm</div>
+                        <div>2) Velocity Equation = (3.1416 × ${d1} × ${n1}) ÷ 60000</div>
+                        <div>3) Velocity Step = ${speedStep1} ÷ 60000</div>
+                        <div>4) Final Velocity = <span class="text-blue-400">${v} m/s</span></div>
+                    </div>
                 </div>
+
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <span class="text-blue-400 font-bold uppercase tracking-wider text-[9px]">Step 2: Force Loads (Lewis Method)</span>
-                    <p class="text-slate-300 mt-1">Tangential Force (Ft): <span class="text-white font-bold">${ft} N</span></p>
-                    <p class="text-slate-300">Effective Force (Ft_eff) [Cs=${cs}]: <span class="text-white font-bold">${ftEff} N</span></p>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Force Pushing Teeth (Ft)</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1">
+                        <div>1) Baseline Calculation = (1000 × ${p}) ÷ ${v}</div>
+                        <div>2) Baseline Calculation = ${forceStep1} ÷ ${v} = <span class="text-blue-400">${ft.toFixed(2)} N</span></div>
+                        <div>3) Shock Calculation = ${ft.toFixed(2)} × ${cs} (Service Factor)</div>
+                        <div>4) Final Effective Force = <span class="text-emerald-400">${ftEff.toFixed(2)} N</span></div>
+                    </div>
                 </div>
+
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <span class="text-blue-400 font-bold uppercase tracking-wider text-[9px]">Step 3: Lewis Form Factor (Y)</span>
-                    <p class="text-slate-300 mt-1">Pinion form factor (y1): <span class="text-white font-bold">${y1.toFixed(4)}</span></p>
-                    <p class="text-slate-300">Gear form factor (y2): <span class="text-white font-bold">${y2.toFixed(4)}</span></p>
-                    <p class="text-slate-400 text-[10px] mt-1">Design governed by minimum factor: <span class="text-amber-400">${designY.toFixed(4)}</span></p>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Gear Tooth Size Factor (Y)</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1">
+                        <div>1) Pinion Profile = 0.154 - (0.912 ÷ ${z1}) = ${y1.toFixed(4)}</div>
+                        <div>2) Driven Gear Profile = 0.154 - (0.912 ÷ ${z2}) = ${y2.toFixed(4)}</div>
+                        <div>3) Selected Smallest Profile = <span class="text-amber-400">${designY.toFixed(4)}</span></div>
+                    </div>
                 </div>
+
                 <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
-                    <span class="text-blue-400 font-bold uppercase tracking-wider text-[9px]">Step 4: Beam Strength (Fs) vs Dynamic Load (Fd)</span>
-                    <p class="text-slate-300 mt-1">Fs = σ0 × b × π × m × Y = <span class="text-white font-bold">${fs} N</span></p>
-                    <p class="text-slate-300">Fd (Barth/B Buckingham Equation) [C=${C}]: <span class="text-white font-bold">${fd} N</span></p>
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Metal Breaking Limit (Fs)</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1">
+                        <div>1) Width size = 10 × ${m} = ${b} mm</div>
+                        <div>2) Maximum Metal Limit = ${sigma0} × ${b} × 3.1416 × ${m} × ${designY.toFixed(4)}</div>
+                        <div>3) ${strengthStep1} × 3.1416 × ${m} × ${designY.toFixed(4)}</div>
+                        <div>4) ${strengthStep2} × ${m} × ${designY.toFixed(4)}</div>
+                        <div>5) ${strengthStep3} × ${designY.toFixed(4)}</div>
+                        <div>6) Final Strength Limit = <span class="text-blue-400">${fs.toFixed(2)} N</span></div>
+                    </div>
                 </div>
+
+                <div class="calc-card p-3 bg-slate-800/60 border border-slate-700 rounded-md">
+                    <b class="text-blue-400 uppercase text-[9px] block mb-2">Dynamic Shock Speed Load (Fd)</b>
+                    <div class="mt-1 font-bold text-slate-300 space-y-1 text-[10px]">
+                        <div>1) Velocity Part = 21 × ${v} = ${term1}</div>
+                        <div>2) Friction Part = (${b} × ${C}) + ${ftEff} = ${term2}</div>
+                        <div>3) Top Line = ${term1} × ${term2} = ${numFd}</div>
+                        <div>4) Bottom Line = ${term1} + √${term2} = ${denFd}</div>
+                        <div>5) Final Shock Speed Load = ${ftEff} + (${numFd} ÷ ${denFd}) = <span class="text-blue-400">${fd.toFixed(2)} N</span></div>
+                    </div>
+                </div>
+
                 <div class="calc-card p-3 border rounded-md ${safetyStatus}">
-                    <span class="font-bold uppercase tracking-wider text-[9px]">Structural Health Evaluation</span>
-                    <p class="text-xs font-bold mt-1">${isSafe ? "✓ DESIGN SATISFACTORY" : "✗ RESTRUCTURING REQUIRED"}</p>
-                    <p class="mt-1 text-[10px] opacity-90">The safety margin index yields Fs/Fd = ${(fs / (fd || 1)).toFixed(2)}. ${isSafe ? 'The structure cleanly handles operating dynamic shocks.' : 'The beam will experience bending yield failure. Increase module size or upgrade material limits.'}</p>
-                </div>`;
+                    <b class="uppercase text-[9px] block mb-1">Security Verification</b>
+                    <div>Bending Stress: <span class="font-bold">${bendingStress.toFixed(1)} MPa</span></div>
+                    <div>Is Metal Limit (${fs.toFixed(1)} N) > Actual Shock Load (${fd.toFixed(1)} N)?</div>
+                    <div class="mt-2 pt-1.5 border-t border-white/10 text-[10px] uppercase font-bold tracking-wider">
+                        STATUS: ${isSafe ? 'PASS // SAFE TO OPERATE' : 'FAIL // MATERIAL WILL BREAK'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // Header Base
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("SPURGEAR PRO // INDUSTRIAL SPECIFICATION SHEET", 14, 14);
+            doc.setFontSize(9);
+            doc.setFont("Helvetica", "normal");
+            doc.text(`Configuration Profile: ${engineMode.toUpperCase()} TRAIN SYSTEM`, 14, 22);
+
+            // Add Design Metrics Text
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(11);
+            doc.setFont("Helvetica", "bold");
+            doc.text("1. Mechanical Configuration Variables", 14, 45);
+            
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(9);
+            let yPos = 52;
+            
+            const inputs = ['z1', 'z2', 'module-sel', 'in-p', 'in-n'];
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    doc.text(`${el.previousElementSibling?.innerText || id}: ${el.value}`, 20, yPos);
+                    yPos += 6;
+                }
+            });
+
+            // Section 2: Mathematical Analytical Stream
+            yPos += 6;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(11);
+            doc.text("2. Process Calculations & Verification Stream", 14, yPos);
+            yPos += 8;
+
+            doc.setFont("Courier", "bold");
+            doc.setFontSize(8);
+            const cards = document.querySelectorAll('#step-output .calc-card');
+            cards.forEach(card => {
+                const lines = card.innerText.split('\n');
+                lines.forEach(line => {
+                    if(yPos > 240) { doc.addPage(); yPos = 20; }
+                    doc.text(line, 16, yPos);
+                    yPos += 4.5;
+                });
+                yPos += 3;
+            });
+
+            // Capture 3D Render Canvas to inject as Vector Sketch layout 
+            try {
+                // Temporarily position camera overhead for a perfect clean orthographic alignment vector layout
+                const oldPos = camera.position.clone();
+                const oldTarget = controls.target.clone();
+                
+                // Hide transparent casing elements temporarily to retain zero noise blueprint data lines
+                if(transparentCasing) transparentCasing.visible = false;
+                
+                camera.position.set(0, 220, 0);
+                controls.target.set(0,0,0);
+                controls.update();
+                renderer.render(scene, camera);
+
+                const dataURL = renderer.domElement.toDataURL('image/png');
+                
+                // Reset positions right after image sequence captures
+                camera.position.copy(oldPos);
+                controls.target.copy(oldTarget);
+                controls.update();
+                if(transparentCasing) transparentCasing.visible = true;
+
+                doc.addPage();
+                doc.setFillColor(15, 23, 42);
+                doc.rect(0, 0, 210, 20, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(10);
+                doc.text("APPENDIX A: CAD PROJECTION SKETCH DIAGRAM", 14, 12);
+
+                // Insert into layout
+                doc.addImage(dataURL, 'PNG', 15, 30, 180, 120);
+                
+                doc.setTextColor(100, 116, 139);
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(8);
+                doc.text("* Diagram displays 2D technical footprint with tooth profile contact positions projected onto the pitch diameters.", 14, 160);
+
+            } catch(e) {
+                console.error("Vector Capture failed", e);
+            }
+
+            doc.save(`SpurGearPro_Analytical_Report.pdf`);
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            if (controls) controls.update();
             
-            if (isAnimating && activeGears.length > 0) {
-                const baseSpeed = 0.015;
+            if(controls) controls.update();
+
+            if(isAnimating) {
+                const rpm = parseFloat(document.getElementById('in-n').value) || 0;
+                const step = (rpm * Math.PI) / 90000; 
+
                 activeGears.forEach(gear => {
-                    gear.obj.rotation.z += baseSpeed * gear.speed;
+                    gear.obj.rotation.z += step * gear.speed;
+                    const currentRotation = gear.obj.rotation.z;
                     
-                    // Live FEA Stress Visualization Shader Simulator
-                    if(gear.targetMeshX !== null) {
-                        const currentGlobalRotation = gear.obj.rotation.z;
-                        gear.teeth.forEach(tooth => {
-                            const absoluteAngle = currentGlobalRotation + tooth.baseAngle;
-                            const worldX = gear.globalX + Math.cos(absoluteAngle) * (gear.obj.children[0] ? gear.obj.position.x : 10);
-                            const distanceToMeshPoint = Math.abs(worldX - gear.targetMeshX);
+                    gear.teeth.forEach(tooth => {
+                        const globalToothAngle = tooth.baseAngle + currentRotation;
+                        let isMeshing = false;
+                        
+                        if(gear.targetMeshX !== null) {
+                            const theoreticalMeshAngle = (gear.targetMeshX > gear.globalX) ? 0 : Math.PI;
+                            let angleDiff = Math.abs((globalToothAngle % (Math.PI * 2)) - theoreticalMeshAngle);
+                            if(angleDiff > Math.PI) angleDiff = (Math.PI * 2) - angleDiff;
                             
-                            const colorAttr = tooth.geometry.attributes.color;
-                            const defaultColor = new THREE.Color(gear.baseBodyColor);
-                            const hotColor = new THREE.Color(0xef4444); 
+                            if (angleDiff < 0.25) {
+                                isMeshing = true;
+                            }
+                        }
+                        
+                        const colorAttr = tooth.geometry.attributes.color;
+                        const targetColor = new THREE.Color();
+                        
+                        if (isMeshing) {
+                            targetColor.setHex(0xef4444); 
+                        } else {
+                            targetColor.setHex(gear.baseBodyColor);
+                        }
+                        
+                        const rAttr = colorAttr.getX(0);
+                        const gAttr = colorAttr.getY(0);
+                        const bAttr = colorAttr.getZ(0);
+                        
+                        if (Math.abs(rAttr - targetColor.r) > 0.01 || 
+                            Math.abs(gAttr - targetColor.g) > 0.01 || 
+                            Math.abs(bAttr - targetColor.b) > 0.01) {
                             
-                            if (distanceToMeshPoint < 8) {
-                                for(let i=0; i<colorAttr.count; i++) {
-                                    colorAttr.setXYZ(i, hotColor.r, hotColor.g, hotColor.b);
-                                }
-                            } else {
-                                for(let i=0; i<colorAttr.count; i++) {
-                                    colorAttr.setXYZ(i, defaultColor.r, defaultColor.g, defaultColor.b);
-                                }
+                            for(let c=0; c<colorAttr.count; c++) {
+                                colorAttr.setXYZ(c, targetColor.r, targetColor.g, targetColor.b);
                             }
                             colorAttr.needsUpdate = true;
-                        });
-                    }
+                        }
+                    });
                 });
             }
-            if (renderer && scene && camera) {
+            
+            if(renderer && scene && camera) {
                 renderer.render(scene, camera);
             }
-        }
-
-        function generatePDF() {
-            alert("Exporting design parameters matrix and spatial 2D snapshot layout vector directly to system documents workspace.");
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text("SpurGear Pro System Engineering Report", 14, 20);
-            doc.text(`Configuration Profile: ${engineMode.toUpperCase()}`, 14, 30);
-            doc.text(`Calculated Component Volume: ${currentCalculatedVolumeGears.toFixed(2)} cc`, 14, 40);
-            doc.save("Gearbox-Design-Report.pdf");
         }
     </script>
 </body>

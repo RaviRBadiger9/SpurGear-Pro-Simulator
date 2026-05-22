@@ -594,6 +594,175 @@
             `;
         }
 
+        function generatePDF() {
+            // Initialize jsPDF library safely using its modern namespace
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // Extract real-time architectural parameters directly from interface inputs
+            const z1 = parseInt(document.getElementById('z1').value) || 20;
+            const z2 = parseInt(document.getElementById('z2').value) || 50;
+            const m = parseFloat(document.getElementById('module-sel').value) || 3.0;
+            const p = document.getElementById('in-p').value;
+            const n = document.getElementById('in-n').value;
+            const materialText = document.getElementById('material-stress').options[document.getElementById('material-stress').selectedIndex].text;
+            const toothAngle = document.getElementById('tooth-system').value;
+            
+            // Calculate dimensional metrics for the geometric layout draft
+            const d1 = z1 * m;
+            const d2 = z2 * m;
+            const centerDistance = (d1 + d2) / 2;
+            
+            // Document Design Palette & Header Framing
+            doc.setFillColor(15, 23, 42); // Primary Dark Blue Slate
+            doc.rect(0, 0, 210, 38, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.text("SPURGEAR PRO", 14, 16);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setFillColor(59, 130, 246); // Accent Cyan Accent Bar
+            doc.rect(14, 20, 28, 1.5, 'F');
+            doc.text("ENGINEERING DESIGN SCHEMATIC REPORT", 14, 26);
+            doc.text(`CONFIG TYPE: ${engineMode.toUpperCase()}`, 14, 31);
+            
+            // Block Segment 1: Physical Parameters Table Display
+            doc.setTextColor(30, 41, 59);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("I. CRITICAL SYSTEM CONSTRAINTS", 14, 48);
+            
+            doc.setStrokeColor(226, 232, 240);
+            doc.setLineWidth(0.2);
+            doc.line(14, 50, 196, 50);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            let currentY = 56;
+            
+            const operationalData = [
+                ["Selected Material Substrate:", materialText],
+                ["Pressure Angle System:", `${toothAngle}° Involute Profile`],
+                ["Operating Power Output:", `${p} kW`],
+                ["Base Pinion Input Velocity:", `${n} RPM`],
+                ["Nominal Module Pitch Index:", `${m.toFixed(1)} mm`]
+            ];
+            
+            operationalData.forEach(([label, value]) => {
+                doc.setFont("helvetica", "bold");
+                doc.text(label, 16, currentY);
+                doc.setFont("helvetica", "normal");
+                doc.text(value, 95, currentY);
+                currentY += 6;
+            });
+            
+            // Block Segment 2: 2D Orthographic Vector Canvas Drafting Area
+            currentY += 6;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("II. SYSTEM LAYOUT GENERATION PLAN (2D AXIAL SCHEMATIC)", 14, currentY);
+            
+            currentY += 2;
+            doc.line(14, currentY, 196, currentY);
+            
+            // Establish scale boundaries to safely fit all gear configurations inside the document margins
+            currentY += 8;
+            const canvasCenterX = 105; 
+            const canvasCenterY = currentY + 35; // Centers the 2D sketch block vertically
+            
+            // Calculate total geometric width span of the mechanism setup
+            let spanWidthIndex = centerDistance;
+            if (engineMode === 'double' || engineMode === 'compound') {
+                const z3 = parseInt(document.getElementById('z3').value) || 18;
+                const z4 = parseInt(document.getElementById('z4').value) || 45;
+                spanWidthIndex += ((z3 * m) + (z4 * m)) / 2;
+            }
+            
+            const rawScalingMatrix = 110 / (spanWidthIndex + (d2 / 2));
+            const finalRenderScale = Math.min(0.85, rawScalingMatrix);
+            
+            // Define graphic rendering style properties for the gear geometry vectors
+            doc.setStrokeColor(71, 85, 105);
+            doc.setLineWidth(0.4);
+            
+            // Vector 1: Structural Pinion Core Geometry
+            const scaledR1 = (d1 / 2) * finalRenderScale;
+            const calculatedPinionOriginX = canvasCenterX - (centerDistance / 2 * finalRenderScale);
+            doc.setFillColor(241, 245, 249);
+            doc.circle(calculatedPinionOriginX, canvasCenterY, scaledR1, 'S');
+            doc.circle(calculatedPinionOriginX, canvasCenterY, m * 2.5 * finalRenderScale, 'S'); // Center Bore Shaft Line
+            
+            // Vector 2: Driven Component Core Geometry
+            const scaledR2 = (d2 / 2) * finalRenderScale;
+            const calculatedDrivenOriginX = calculatedPinionOriginX + (centerDistance * finalRenderScale);
+            doc.circle(calculatedDrivenOriginX, canvasCenterY, scaledR2, 'S');
+            doc.circle(calculatedDrivenOriginX, canvasCenterY, m * 2.5 * finalRenderScale, 'S'); // Center Bore Shaft Line
+            
+            // Draw dimensional Pitch Centerline indicator pathing between meshes
+            doc.setLineWidth(0.25);
+            doc.setDashPattern([2, 2], 0);
+            doc.line(calculatedPinionOriginX - 10, canvasCenterY, calculatedDrivenOriginX + scaledR2 + 10, canvasCenterY);
+            doc.setDashPattern([], 0); // Reset dash mapping instantly back to solid lines
+            
+            // Place physical text annotations directly over vector points
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "bold");
+            doc.text(`PINION (Z=${z1})`, calculatedPinionOriginX, canvasCenterY - scaledR1 - 3, { align: 'center' });
+            doc.text(`MAPPED GEAR (Z=${z2})`, calculatedDrivenOriginX, canvasCenterY - scaledR2 - 3, { align: 'center' });
+            doc.text(`Center Space: ${centerDistance.toFixed(2)}mm`, (calculatedPinionOriginX + calculatedDrivenOriginX) / 2, canvasCenterY + 4, { align: 'center' });
+            
+            // Block Segment 3: Mathematical Derivation & Validation Ledger
+            currentY += 80; 
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("III. MATHEMATICAL STRESS VERIFICATION LOG", 14, currentY);
+            
+            currentY += 2;
+            doc.line(14, currentY, 196, currentY);
+            
+            doc.setFont("monospace", "normal");
+            doc.setFontSize(8.5);
+            currentY += 6;
+            
+            // Parse structural calculation strings systematically out of the right hand UI log block
+            const analysisStreamArray = document.querySelectorAll('#step-output > div');
+            analysisStreamArray.forEach((panel) => {
+                if (currentY > 275) { // Protect document space limits, insert new page break tracking cleanly
+                    doc.addPage();
+                    currentY = 20; 
+                }
+                
+                const coreHeader = panel.querySelector('b')?.innerText || "CALCULATION ENTRY";
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(59, 130, 246);
+                doc.text(coreHeader, 16, currentY);
+                currentY += 5;
+                
+                doc.setFont("monospace", "normal");
+                doc.setTextColor(51, 65, 85);
+                
+                const formulationLines = panel.querySelectorAll('div > div');
+                formulationLines.forEach((element) => {
+                    let processedFormulaString = element.innerText.replace(/[\u2111-\u2118\u00D7\u221A\u00F7]/g, (symbol) => {
+                        if(symbol === '×') return '*';
+                        if(symbol === '÷') return '/';
+                        if(symbol === '√') return 'sqrt';
+                        return symbol;
+                    });
+                    
+                    doc.text(processedFormulaString, 18, currentY);
+                    currentY += 4.5;
+                });
+                currentY += 3; 
+            });
+            
+            // Direct browser compilation process pipeline to pop open print utility engine window smoothly
+            doc.save(`SpurGear_Pro_Report_${Date.now()}.pdf`);
+        }
+
         function animate() {
             requestAnimationFrame(animate);
             if(isAnimating && activeGears.length > 0) {

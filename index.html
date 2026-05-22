@@ -3,465 +3,517 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpurGear Pro Suite & Analytics Engine</title>
-    <!-- Tailwind CSS Engine -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- jsPDF Framework Bundle -->
+    <title>SpurGear Pro - Stress & Mass Verification Suite</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
-
-    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
-        <div>
-            <h1 class="text-xl font-black tracking-wider text-blue-400">SPURGEAR PRO</h1>
-            <p class="text-xs text-slate-400 font-mono">AGMA RATING METHODOLOGY & WEIGHT OPTIMIZER</p>
-        </div>
-        <div class="flex gap-3">
-            <button onclick="calculateSystem()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 font-bold rounded-lg text-sm transition-all shadow-lg shadow-blue-900/30">
-                Run Simulation Engine
-            </button>
-            <button onclick="generatePDF()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 font-bold rounded-lg text-sm transition-all border border-slate-700">
-                Export System PDF
-            </button>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <style>
+        :root {
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-100: #f1f5f9;
+            --emerald-500: #10b981;
+            --emerald-600: #059669;
+            --rose-500: #ef4444;
+            --blue-600: #2563eb;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b0f19;
+            color: var(--slate-100);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--slate-900);
+            border: 1px solid var(--slate-700);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+        }
+        .header {
+            border-bottom: 2px solid var(--slate-800);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            margin: 4px 0 0 0;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media(max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        .panel {
+            background: var(--slate-800);
+            border: 1px solid var(--slate-700);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .panel h2 {
+            margin-top: 0;
+            font-size: 18px;
+            border-bottom: 1px solid var(--slate-700);
+            padding-bottom: 8px;
+            color: #fff;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #cbd5e1;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            background: var(--slate-900);
+            border: 1px solid var(--slate-700);
+            border-radius: 6px;
+            color: #fff;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        input:focus, select:focus {
+            outline: 2px solid var(--blue-600);
+        }
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+        .btn-calc { background: var(--blue-600); color: white; }
+        .btn-calc:hover { background: #1d4ed8; }
+        .btn-pdf { background: var(--slate-700); color: white; }
+        .btn-pdf:hover { background: #475569; }
         
-        <!-- Input Configurations Pane -->
-        <section class="lg:col-span-5 bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-6">
-            <h2 class="text-md font-bold tracking-wide uppercase text-slate-300 border-b border-slate-800 pb-2">System Design Parameters</h2>
+        .status-banner {
+            padding: 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 16px;
+        }
+        .pass { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--emerald-500); color: #34d399; }
+        .fail { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--rose-500); color: #f87171; }
+        
+        .results-box {
+            background: var(--slate-900);
+            border-radius: 6px;
+            padding: 14px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #e2e8f0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>SpurGear Pro</h1>
+        <p>INDUSTRIAL GEARBOX DESIGN REPORT // STRUCTURAL &amp; MASS VERIFICATION SUITE</p>
+    </div>
+
+    <div class="grid">
+        <!-- Input Configurations -->
+        <div class="panel">
+            <h2>1. Parameter Input Configurations</h2>
             
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Power Rating (kW)</label>
-                    <input id="in-p" type="number" value="45.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+            <div class="grid" style="gap: 12px; grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label for="z1">Pinion Teeth (Z1)</label>
+                    <input type="number" id="z1" value="20" min="12">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Input Speed (RPM)</label>
-                    <input id="in-n" type="number" value="1450" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Pinion Teeth ($Z_1$)</label>
-                    <input id="z1" type="number" value="18" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Gear Teeth ($Z_2$)</label>
-                    <input id="z2" type="number" value="54" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+                <div class="form-group">
+                    <label for="z2">Gear Teeth (Z2)</label>
+                    <input type="number" id="z2" value="50" min="12">
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Module ($m$ - mm)</label>
-                    <select id="module-sel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none text-white">
-                        <option value="2">2.0</option>
+            <div class="grid" style="gap: 12px; grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label for="module-sel">Module (m) [mm]</label>
+                    <select id="module-sel">
+                        <option value="1.5">1.5</option>
+                        <option value="2.0">2.0</option>
                         <option value="2.5">2.5</option>
-                        <option value="3" selected>3.0</option>
-                        <option value="4">4.0</option>
-                        <option value="5">5.0</option>
-                        <option value="6">6.0</option>
+                        <option value="3.0" selected>3.0</option>
+                        <option value="4.0">4.0</option>
+                        <option value="5.0">5.0</option>
+                        <option value="6.0">6.0</option>
+                        <option value="8.0">8.0</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Face Width ($b$ - mm)</label>
-                    <input id="face-w" type="number" value="35" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+                <div class="form-group">
+                    <label for="face-width">Face Width (b) [mm]</label>
+                    <input type="number" id="face-width" value="30" min="5">
                 </div>
             </div>
 
-            <div class="space-y-2">
-                <label class="block text-xs font-bold text-slate-400 uppercase">Profile Core Metallurgy Selection</label>
-                <select id="material-stress" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none text-white">
-                    <option value="150" selected>Gray Cast Iron (Grade 30) - Allowable σ = 150 MPa</option>
-                    <option value="240">Structural Carbon Steel (C45) - Allowable σ = 240 MPa</option>
-                    <option value="380">Alloy Steel (42CrMo4 Oil-Quenched) - Allowable σ = 380 MPa</option>
-                    <option value="550">Case-Hardened Carburizing Steel (18CrNi8) - Allowable σ = 550 MPa</option>
+            <div class="grid" style="gap: 12px; grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label for="in-p">Power (P) [kW]</label>
+                    <input type="number" id="in-p" value="15" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="in-n">Pinion Speed (n) [RPM]</label>
+                    <input type="number" id="in-n" value="1440">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="tooth-system">Tooth Profile System</label>
+                <select id="tooth-system">
+                    <option value="20-inv" selected>20° Full-Depth Involute</option>
+                    <option value="14.5-inv">14.5° Full-Depth Involute</option>
                 </select>
             </div>
 
-            <!-- Hollow Shaft Geometric Additions -->
-            <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800/80 space-y-4">
-                <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider">Hollow Shaft Core Properties</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Outer Diameter ($d_o$ - mm)</label>
-                        <input id="shaft-outer" type="number" value="30" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Inner ID Core ($d_i$ - mm)</label>
-                        <input id="shaft-inner" type="number" value="18" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 pt-2">
-                    <button onclick="verifyWeightBenefit()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold rounded-md transition-all uppercase tracking-wider text-white shadow-md">
-                        Check Structural Weight Save
-                    </button>
-                </div>
+            <div class="form-group">
+                <label for="material-stress">Structural Material Selection</label>
+                <select id="material-stress">
+                    <option value="150">Cast Iron (Grade 30) [σ_all = 150 MPa]</option>
+                    <option value="250" selected>Plain Carbon Steel (C45) [σ_all = 250 MPa]</option>
+                    <option value="400">Alloy Steel (40Cr1MoV) [σ_all = 400 MPa]</option>
+                </select>
             </div>
 
-            <!-- Informational Warning Alert Panel for material stress adjustments -->
-            <div class="p-4 bg-amber-950/40 border border-amber-900/60 rounded-xl flex items-start gap-3">
-                <span class="text-amber-400 text-lg">⚠️</span>
-                <p class="text-xs text-amber-300 leading-relaxed">
-                    <strong>Material Failure Rule:</strong> If induced calculated bending fatigue metrics cross your target material profile limits, system structural breakdown occurs. Correct this condition by picking a premium alloy steel grade, enlarging face parameters, or raising the module layout value.
-                </p>
-            </div>
-        </section>
-
-        <!-- Right Side Analytical Columns -->
-        <section class="lg:col-span-7 space-y-6">
-            
-            <!-- Graphic Vector Schematic Render Canvas Viewport -->
-            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 shadow-xl">
-                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Mechanical Proportional Elevation Blueprint View</h2>
-                <div class="bg-slate-900 rounded-xl p-2 flex justify-center items-center overflow-hidden border border-slate-800">
-                    <svg id="schematic-viewport" viewBox="0 0 500 240" class="w-full h-auto max-h-[240px]">
-                        <!-- Dynamic Canvas Elements injected via JavaScript Engine -->
-                    </svg>
-                </div>
-            </div>
-
-            <!-- System Analysis Readout Panel Displaying Numerical Logic Matrix blocks -->
-            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
-                <h2 class="text-md font-bold tracking-wide uppercase text-slate-300 border-b border-slate-800 pb-2">Real-Time Evaluation Feed</h2>
-                
-                <div id="step-output" class="space-y-3">
-                    <div class="text-sm text-slate-400 font-mono animate-pulse">Awaiting parameter submission execution...</div>
-                </div>
-
-                <!-- Weight Optimizations Analytical Overlay Matrix -->
-                <div id="weight-matrix-box" class="hidden p-4 bg-slate-900 rounded-xl border border-slate-800 space-y-3">
-                    <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                        <span>📊</span> Gearbox Mass Reduction Analytics Matrix
-                    </h3>
-                    <div class="grid grid-cols-3 gap-2 font-mono text-center text-xs">
-                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
-                            <span class="block text-[10px] text-slate-500 uppercase">Solid Mass</span>
-                            <span id="weight-solid" class="font-bold text-slate-300">-</span>
-                        </div>
-                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
-                            <span class="block text-[10px] text-slate-500 uppercase">Hollow Mass</span>
-                            <span id="weight-hollow" class="font-bold text-blue-400">-</span>
-                        </div>
-                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
-                            <span class="block text-[10px] text-slate-500 uppercase">Mass Saved</span>
-                            <span id="weight-saved" class="font-bold text-emerald-400">-</span>
-                        </div>
+            <div class="panel" style="background: rgba(0,0,0,0.2); margin-top: 12px; padding: 12px;">
+                <h3 style="margin-top:0; font-size: 14px; color: #60a5fa;">Hollow Center Bore Configuration</h3>
+                <div class="grid" style="gap: 12px; grid-template-columns: 1fr 1fr; margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="bore-d1">Pinion Bore dh1 [mm]</label>
+                        <input type="number" id="bore-d1" value="15" min="0">
                     </div>
-                    <p id="weight-verdict" class="text-[11px] text-slate-400 italic leading-relaxed pt-1"></p>
-                </div>
-            </div>
-
-        </section>
-
-    </main>
-
-    <!-- App Engine Script Logic Processing Area -->
-    <script>
-        // Global Calculation state management scope cache variable objects
-        let cachedState = {};
-
-        function calculateSystem() {
-            // Retrieve variable configuration properties inside standard input wrappers
-            const P = parseFloat(document.getElementById('in-p').value);
-            const n1 = parseFloat(document.getElementById('in-n').value);
-            const Z1 = parseInt(document.getElementById('z1').value);
-            const Z2 = parseInt(document.getElementById('z2').value);
-            const m = parseFloat(document.getElementById('module-sel').value);
-            const b = parseFloat(document.getElementById('face-w').value);
-            const allowSigma = parseFloat(document.getElementById('material-stress').value);
-
-            // Hollow Shaft parameters
-            const d_o = parseFloat(document.getElementById('shaft-outer').value);
-            const d_i = parseFloat(document.getElementById('shaft-inner').value);
-
-            // Verify safe numbers bounding conditions escape parameters checks
-            if(!P || !n1 || !Z1 || !Z2 || !m || !b || !d_o) {
-                document.getElementById('step-output').innerHTML = `<div class="p-3 bg-red-950/40 border border-red-900 rounded-lg text-xs text-red-400">Invalid parameters. Confirm all dimensions are configured to safe operational numeric configurations.</div>`;
-                return;
-            }
-
-            if(d_i >= d_o) {
-                document.getElementById('step-output').innerHTML = `<div class="p-3 bg-red-950/40 border border-red-900 rounded-lg text-xs text-red-400">Shaft Configuration Error: Inner Bore core diameter value cannot be larger or equal to Outer Shaft Structural limits.</div>`;
-                return;
-            }
-
-            // Calculation Logic Architecture Pipeline
-            const VR = Z2 / Z1; // Velocity Profile Ratio
-            const d1 = Z1 * m;  // Reference Pitch Circle Diameter Pinion (mm)
-            const d2 = Z2 * m;  // Reference Pitch Circle Diameter Gear (mm)
-            const a = (d1 + d2) / 2; // Exact Transmission Center Hub Distance Axis (mm)
-
-            // Dynamic Check against Shaft vs Gear Geometry bounds
-            if (d_o >= d1 || d_o >= d2) {
-                document.getElementById('step-output').innerHTML = `<div class="p-3 bg-red-950/40 border border-red-900 rounded-lg text-xs text-red-400">Geometry Error: The configured shaft outer boundary diameter ($d_o = ${d_o}$ mm) exceeds or conflicts with the physical space of the root circle diameters. Please minimize your shaft profile sizes.</div>`;
-                return;
-            }
-
-            // Rotational Torque metrics parameters calculation profiles
-            const T1 = (P * 1000) / (2 * Math.PI * (n1 / 60)); // Torque metric Newton-Meters (N.m)
-            const Ft = (T1 * 1000) / (d1 / 2); // Transmitted Tangential Force Vector load profiles (N)
-
-            // Approximate Lewis Form Factor mapping based on 20 deg full depth standard curves interpolation arrays
-            function getLewisFactor(Z) {
-                if (Z <= 15) return 0.289;
-                if (Z <= 19) return 0.302;
-                if (Z <= 25) return 0.330;
-                if (Z <= 35) return 0.360;
-                if (Z <= 50) return 0.408;
-                if (Z <= 100) return 0.446;
-                return 0.468;
-            }
-
-            const Y = getLewisFactor(Z1);
-            // Induced Structural Lewis Bending Stress profile calculation step ($\sigma = F_t / (b \cdot m \cdot Y)$)
-            const sigmaBending = Ft / (b * m * Y);
-
-            // Evaluate system stress profiles against material breakdown limit boundaries
-            const systemPasses = sigmaBending <= allowSigma;
-
-            // Cache metrics properties to local variable context bounds safely for document compilation steps
-            cachedState = { P, n1, Z1, Z2, m, b, allowSigma, VR, d1, d2, a, T1, Ft, sigmaBending, systemPasses, d_o, d_i };
-
-            // Render Analytical Layout panels
-            renderReadoutFeed(sigmaBending, allowSigma, systemPasses);
-            renderVectorBlueprint(d1, d2, d_o, d_i);
-            
-            // Auto update weight calculations if viewport box is displayed actively
-            if(!document.getElementById('weight-matrix-box').classList.contains('hidden')) {
-                verifyWeightBenefit();
-            }
-        }
-
-        function renderReadoutFeed(sigmaBending, allowSigma, systemPasses) {
-            const container = document.getElementById('step-output');
-            
-            let statusCard = systemPasses 
-                ? `<div class="p-4 bg-emerald-950/30 border border-emerald-800/80 rounded-xl text-xs space-y-1">
-                     <span class="font-bold text-emerald-400 uppercase tracking-widest text-sm block">✓ STRUCTURAL ANALYSIS: PASS</span>
-                     <p class="text-slate-300">The calculated bending stress profile stays below the material breakdown limit. The profile geometry is safe for operation.</p>
-                   </div>`
-                : `<div class="p-4 bg-rose-950/40 border border-rose-900/80 rounded-xl text-xs space-y-2">
-                     <span class="font-bold text-rose-400 uppercase tracking-widest text-sm block">❌ STRUCTURAL ANALYSIS: CRITICAL MATERIAL FAILURE RISK</span>
-                     <p class="text-slate-300">The induced bending fatigue profile (<span class="font-mono font-bold text-rose-300">${sigmaBending.toFixed(1)} MPa</span>) exceeds the allowable material limit (<span class="font-mono font-bold text-slate-300">${allowSigma} MPa</span>).</p>
-                     <p class="text-amber-300 font-medium">💡 Recommended Action: Increase the face width parameter, upgrade to an Alloy Steel core composition, or step up the module index to spread the tooth line load distribution footprint.</p>
-                   </div>`;
-
-            container.innerHTML = `
-                ${statusCard}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                        <span class="text-slate-500 block uppercase font-bold text-[10px]">Reference Geometry Matrix</span>
-                        <p class="text-slate-300">Pinion Diameter $D_1$: <span class="text-white font-bold">${cachedState.d1.toFixed(1)} mm</span></p>
-                        <p class="text-slate-300">Gear Diameter $D_2$: <span class="text-white font-bold">${cachedState.d2.toFixed(1)} mm</span></p>
-                        <p class="text-slate-300">Center Axis Line Gap: <span class="text-white font-bold">${cachedState.a.toFixed(1)} mm</span></p>
-                    </div>
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                        <span class="text-slate-500 block uppercase font-bold text-[10px]">Torque / Stress Distribution Dynamics</span>
-                        <p class="text-slate-300">Driving Torque $T_1$: <span class="text-blue-400 font-bold">${cachedState.T1.toFixed(1)} N·m</span></p>
-                        <p class="text-slate-300">Tangential Load $F_t$: <span class="text-blue-400 font-bold">${cachedState.Ft.toFixed(1)} N</span></p>
-                        <p class="text-slate-300">Induced Tooth Loading: <span class="text-amber-400 font-bold">${sigmaBending.toFixed(1)} MPa</span></p>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="bore-d2">Gear Bore dh2 [mm]</label>
+                        <input type="number" id="bore-d2" value="35" min="0">
                     </div>
                 </div>
-            `;
-        }
+                <p style="font-size: 11px; color: #94a3b8; margin: 6px 0 0 0;">Setting diameter to 0 computes a solid component configuration.</p>
+            </div>
 
-        function renderVectorBlueprint(d1, d2, d_o, d_i) {
-            const svg = document.getElementById('schematic-viewport');
+            <div class="btn-group">
+                <button type="button" class="btn-calc" onclick="evaluateMechanics()">Check Stress &amp; Weight</button>
+                <button type="button" class="btn-pdf" onclick="generatePDF()">Generate PDF Report</button>
+            </div>
+        </div>
+
+        <!-- Output Display Panel -->
+        <div class="panel">
+            <h2>2. Verification &amp; Compliance Summary</h2>
             
-            // Standard dynamic layout resolution scaling maps configurations bounds
-            const rawWidth = d1 + d2;
-            const targetWidth = 360;
-            const scaleFactor = targetWidth / rawWidth;
+            <div id="status-banner" class="status-banner pass">
+                SYSTEM STATUS: READY FOR ANALYSIS
+            </div>
 
-            // Transformed scaling properties dimensions components
-            const r1 = (d1 / 2) * scaleFactor;
-            const r2 = (d2 / 2) * scaleFactor;
-            const sOuter = (d_o / 2) * scaleFactor;
-            const sInner = (d_i / 2) * scaleFactor;
+            <h3 style="font-size:14px; margin-bottom:6px; color:#94a3b8;">Maximum Bending Stress: <span id="max-stress-label" style="color:#fff; font-weight:bold;">--</span></h3>
+            <h3 style="font-size:14px; margin-bottom:12px; color:#94a3b8;">Total Assembly Mass: <span id="total-weight-label" style="color:#60a5fa; font-weight:bold;">--</span></h3>
 
-            const cx1 = 60 + r1;
-            const cy1 = 120;
-            const cx2 = cx1 + r1 + r2;
-            const cy2 = cy1;
+            <div class="results-box" id="step-output">
+                Perform a calculation trace script deployment to run mechanical static verification steps...
+            </div>
+        </div>
+    </div>
+</div>
 
-            svg.innerHTML = `
-                <!-- Center Pitch Reference Axis connection linkages marker path strings -->
-                <line x1="${cx1}" y1="${cy1}" x2="${cx2}" y2="${cy2}" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 4" />
-                
-                <!-- Pinion Reference Outer Shell circle path profiles -->
-                <circle cx="${cx1}" cy="${cy1}" r="${r1}" fill="rgba(30, 41, 59, 0.4)" stroke="#3b82f6" stroke-width="2" />
-                <circle cx="${cx1}" cy="${cy1}" r="${sOuter}" fill="#0f172a" stroke="#64748b" stroke-width="1" />
-                <circle cx="${cx1}" cy="${cy1}" r="2" fill="#ef4444" />
+<script>
+    // Automatically run computation on window initialization load
+    window.addEventListener('DOMContentLoaded', () => {
+        evaluateMechanics();
+    });
 
-                <!-- Driven Output Gear Configuration Path Profiles -->
-                <circle cx="${cx2}" cy="${cy2}" r="${r2}" fill="rgba(15, 23, 42, 0.6)" stroke="#06b6d4" stroke-width="2" />
-                
-                <!-- Hollow Shaft Center Geometry Core Details -->
-                <circle cx="${cx2}" cy="${cy2}" r="${sOuter}" fill="#334155" stroke="#94a3b8" stroke-width="1.5" />
-                <circle cx="${cx2}" cy="${cy2}" r="${sInner}" fill="#0f172a" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 1" />
-                <circle cx="${cx2}" cy="${cy2}" r="2" fill="#ef4444" />
+    function evaluateMechanics() {
+        const z1 = parseInt(document.getElementById('z1').value) || 20;
+        const z2 = parseInt(document.getElementById('z2').value) || 50;
+        const m = parseFloat(document.getElementById('module-sel').value) || 3;
+        const b = parseFloat(document.getElementById('face-width').value) || 30;
+        const P = parseFloat(document.getElementById('in-p').value) || 15;
+        const n = parseFloat(document.getElementById('in-n').value) || 1440;
+        const sigma_all = parseFloat(document.getElementById('material-stress').value);
+        const toothSystem = document.getElementById('tooth-system').value;
+        
+        const dh1 = parseFloat(document.getElementById('bore-d1').value) || 0;
+        const dh2 = parseFloat(document.getElementById('bore-d2').value) || 0;
 
-                <!-- Mesh Tangency Point Vertical Interlock Crosshair marker paths -->
-                <line x1="${cx1 + r1}" y1="${cy1 - 25}" x2="${cx1 + r1}" y2="${cy1 + 25}" stroke="#ef4444" stroke-width="1" stroke-dasharray="2 2" />
-                
-                <!-- Blueprint Typography Data Overlays indicators tags labels -->
-                <text x="${cx1}" y="${cy1 - r1 - 8}" fill="#94a3b8" font-size="10" font-family="monospace" text-anchor="middle">Pinion ($d_1$)</text>
-                <text x="${cx2}" y="${cy2 - r2 - 8}" fill="#94a3b8" font-size="10" font-family="monospace" text-anchor="middle">Gear ($d_2$)</text>
-                <text x="${cx2}" y="${cy2 + 6}" fill="#38bdf8" font-size="8" font-family="monospace" text-anchor="middle">Hollow ID</text>
-            `;
+        // 1. Structural Geometry Setup
+        const d1 = z1 * m;
+        const d2 = z2 * m;
+        
+        let Y1 = (toothSystem === "20-inv") ? (0.154 - (0.912 / z1)) : (0.124 - (0.684 / z1));
+        let Y2 = (toothSystem === "20-inv") ? (0.154 - (0.912 / z2)) : (0.124 - (0.684 / z2));
+        
+        // 2. Load Mechanics
+        const omega = (2 * Math.PI * n) / 60;
+        const T1 = (P * 1000) / omega; 
+        const Ft = T1 / (d1 / 2000);   
+        
+        const v = (Math.PI * d1 * n) / 60000;
+        const Kv = 3 / (3 + v);
+        
+        // Lewis Stress Computation
+        const sigma_calc = Ft / (Kv * b * m * Math.PI * Y1);
+        
+        // 3. Hollow Boundary Constraint Controls
+        const root_d1 = d1 - (2.5 * m);
+        const root_d2 = d2 - (2.5 * m);
+        
+        let geometricFailure = false;
+        let failureReason = "";
+
+        if(dh1 >= root_d1) {
+            geometricFailure = true;
+            failureReason = `Bore diameter dh1 (${dh1}mm) cuts through Pinion Root Diameter (${root_d1.toFixed(1)}mm)!`;
+        }
+        if(dh2 >= root_d2) {
+            geometricFailure = true;
+            failureReason = `Bore diameter dh2 (${dh2}mm) cuts through Gear Root Diameter (${root_d2.toFixed(1)}mm)!`;
         }
 
-        function verifyWeightBenefit() {
-            // Check application initialization state boundary checks parameters trace logs
-            if(!cachedState.d2) {
-                calculateSystem();
+        // 4. Component Volume & Mass Computation (Steel density: 7850 kg/m^3)
+        const rho = 7850; 
+        const b_m = b / 1000; 
+        
+        const vol_p = Math.PI * (Math.pow(d1/2000, 2) - Math.pow(dh1/2000, 2)) * b_m;
+        const vol_g = Math.PI * (Math.pow(d2/2000, 2) - Math.pow(dh2/2000, 2)) * b_m;
+        
+        const mass_p = Math.max(0, vol_p * rho);
+        const mass_g = Math.max(0, vol_g * rho);
+        const total_mass = mass_p + mass_g;
+
+        // Sync to Application View States
+        const banner = document.getElementById('status-banner');
+        const stressLabel = document.getElementById('max-stress-label');
+        const weightLabel = document.getElementById('total-weight-label');
+        const output = document.getElementById('step-output');
+
+        stressLabel.innerText = `${sigma_calc.toFixed(2)} MPa`;
+        weightLabel.innerText = `${total_mass.toFixed(2)} kg`;
+
+        let isSafe = (sigma_calc <= sigma_all) && !geometricFailure;
+
+        if (isSafe) {
+            banner.className = "status-banner pass";
+            banner.innerText = "PASS // DESIGN CONFIGURATION COMPLIANT & SAFE";
+        } else {
+            banner.className = "status-banner fail";
+            banner.innerText = geometricFailure ? "FAIL // GEOMETRIC CRITICAL FAILURE" : "FAIL // MATERIAL STRESS EXCEEDED OVERLOAD BREAK";
+        }
+
+        // Generate dynamic text output stream trace log
+        let reportText = `[GEOMETRIC ANALYSIS]\n`;
+        reportText += `• Pinion Pitch Dia (d1): ${d1.toFixed(1)} mm | Root Dia: ${root_d1.toFixed(1)} mm\n`;
+        reportText += `• Gear Pitch Dia (d2): ${d2.toFixed(1)} mm | Root Dia: ${root_d2.toFixed(1)} mm\n`;
+        reportText += `• Center Core Profiling: Pinion Bore = ${dh1} mm, Gear Bore = ${dh2} mm\n\n`;
+        
+        reportText += `[LOAD & FORCE METRICS]\n`;
+        reportText += `• Pitch Velocity (v): ${v.toFixed(2)} m/s | Velocity Factor (Kv): ${Kv.toFixed(3)}\n`;
+        reportText += `• Pitch Line Tangential Force (Ft): ${Ft.toFixed(1)} N\n\n`;
+        
+        reportText += `[STRESS VERIFICATION SUITE]\n`;
+        reportText += `• Applied Bending Stress (σ): ${sigma_calc.toFixed(2)} MPa\n`;
+        reportText += `• Allowable Material Limit (σ_all): ${sigma_all} MPa\n`;
+        
+        if(!isSafe) {
+            reportText += `\n[CRITICAL WARNING - MATERIAL BREAK RISK]\n`;
+            if(geometricFailure) {
+                reportText += `⚠️ ALERT: ${failureReason}\n`;
+                reportText += `FIX: Reduce bore diameters or increase the module size to add back material volume.\n`;
+            } else {
+                reportText += `⚠️ ALERT: Applied Stress exceeds structural yield envelope bounds.\n`;
+                reportText += `FIX: 1. Increase Module size (m)\n`;
+                reportText += `     2. Increase Face width (b)\n`;
+                reportText += `     3. Upgrade material classification tier to Alloy Steel.\n`;
             }
-            
-            const d2 = cachedState.d2;
-            const b = cachedState.b;
-            const d_o = cachedState.d_o;
-            const d_i = cachedState.d_i;
-
-            // Density constant assumptions parameters definitions (Steel Alloy ~ 7.85 g/cm^3)
-            const rho = 7.85 / 1000000; // converted to kilograms over millimeter cubed volume bounds indices
-
-            // Approximate physical volume geometry models calculations
-            // Main Gear body volume minus solid shaft hub core volume
-            const volumeGearOuterDisk = Math.PI * Math.pow(d2 / 2, 2) * b;
-            const volumeShaftCoreSolid = Math.PI * Math.pow(d_o / 2, 2) * b;
-            
-            // Net structural mass computations profiles
-            const solidTotalVolume = volumeGearOuterDisk; 
-            const hollowRemovedBoreVolume = Math.PI * Math.pow(d_i / 2, 2) * b;
-
-            const massSolidSystem = solidTotalVolume * rho;
-            const massHollowSystem = (solidTotalVolume - hollowRemovedBoreVolume) * rho;
-            const absoluteSavedMass = massSolidSystem - massHollowSystem;
-            const percentageSaved = (absoluteSavedMass / massSolidSystem) * 100;
-
-            // Push calculation vectors records arrays over DOM element UI blocks
-            document.getElementById('weight-solid').innerText = `${massSolidSystem.toFixed(2)} kg`;
-            document.getElementById('weight-hollow').innerText = `${massHollowSystem.toFixed(2)} kg`;
-            document.getElementById('weight-saved').innerText = `${absoluteSavedMass.toFixed(2)} kg (${percentageSaved.toFixed(1)}%)`;
-
-            document.getElementById('weight-verdict').innerHTML = `
-                Hollowing out the gear core center shaft diameter to <span class="text-blue-400 font-bold font-mono">${d_i} mm</span> removes the low-stress inner material. This design maintains the same structural torque capacity while cutting center mass by <span class="text-emerald-400 font-bold font-mono">${percentageSaved.toFixed(1)}%</span>.
-            `;
-
-            // Display elements view blocks smoothly
-            document.getElementById('weight-matrix-box').classList.remove('hidden');
+        } else {
+            reportText += `\n✔ Dynamic loading status is completely within healthy elastic structural margins.\n`;
         }
 
-        function generatePDF() {
-            if(!cachedState.d1) {
-                alert("Please click 'Run Simulation Engine' first to build structural analytics profiles data maps.");
-                return;
-            }
+        reportText += `\n[MASS COMPLIANCE METRICS]\n`;
+        reportText += `• Pinion Net Mass: ${mass_p.toFixed(2)} kg\n`;
+        reportText += `• Driven Gear Net Mass: ${mass_g.toFixed(2)} kg\n`;
+        reportText += `• Total Steel Assembly Structural Mass: ${total_mass.toFixed(2)} kg`;
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        output.innerText = reportText;
+    }
 
-            // Setup styling theme properties variables
-            const brandColor = [15, 23, 42];
-            const accentColor = [59, 130, 246];
-            const textDark = [51, 65, 85];
+    function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
 
-            // Render Document branding banner layouts panels block fields
-            doc.setFillColor(...brandColor);
-            doc.rect(0, 0, 210, 35, 'F');
-            
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(22);
-            doc.setTextColor(255, 255, 255);
-            doc.text("SpurGear Pro", 15, 16);
-            
-            doc.setFont("Helvetica", "normal");
-            doc.setFontSize(9);
-            doc.setTextColor(148, 163, 184);
-            doc.text("ANALYTICAL STRUCTURAL SPECIFICATION MACHINE CALCULATIONS // EXPORT MATRIX", 15, 23);
-            doc.text(`Timestamp: ${new Date().toLocaleDateString()} // ${new Date().toLocaleTimeString()}`, 15, 28);
+        const z1 = parseInt(document.getElementById('z1').value) || 20;
+        const z2 = parseInt(document.getElementById('z2').value) || 50;
+        const m = parseFloat(document.getElementById('module-sel').value) || 3;
+        const b = parseFloat(document.getElementById('face-width').value) || 30;
+        const p = document.getElementById('in-p').value;
+        const n = document.getElementById('in-n').value;
+        const stressMat = document.getElementById('material-stress').options[document.getElementById('material-stress').selectedIndex].text;
+        const toothProfile = document.getElementById('tooth-system').options[document.getElementById('tooth-system').selectedIndex].text;
+        
+        const dh1 = parseFloat(document.getElementById('bore-d1').value) || 0;
+        const dh2 = parseFloat(document.getElementById('bore-d2').value) || 0;
 
-            let y = 48;
+        const passStatus = document.getElementById('status-banner').innerText.includes('PASS');
+        const stressVal = document.getElementById('max-stress-label').innerText;
+        const weightVal = document.getElementById('total-weight-label').innerText;
 
-            // System Specification Section block array models fields 
-            doc.setFontSize(12);
-            doc.setTextColor(...brandColor);
-            doc.setFont("Helvetica", "bold");
-            doc.text("1. GEARSET ANALYTICAL DESIGN CONFIGURATIONS", 15, y);
-            doc.setDrawColor(226, 232, 240);
-            doc.line(15, y + 2, 195, y + 2);
-            
-            y += 10;
+        // Draw PDF Header Block Context
+        doc.setFillColor(15, 23, 42); 
+        doc.rect(0, 0, 210, 32, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("SpurGear Pro", 14, 15);
+        
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(148, 163, 184);
+        doc.text(`INDUSTRIAL GEARBOX DESIGN REPORT // WEIGHT & STRESS ANALYTICS`, 14, 22);
+        doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 14, 26);
+
+        // Section 1 Parameters Block
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(30, 41, 59);
+        doc.text("1. Input Design Metrics & Hollow Core Limits", 14, 45);
+        
+        doc.setStrokeColor(226, 232, 240);
+        doc.setLineWidth(0.5);
+        doc.line(14, 48, 196, 48);
+
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(71, 85, 105);
+        
+        doc.text(`• Selected Module (m): ${m} mm`, 16, 56);
+        doc.text(`• Pinion Teeth (Z1): ${z1} | Bore: ${dh1} mm`, 16, 63);
+        doc.text(`• Driven Gear Teeth (Z2): ${z2} | Bore: ${dh2} mm`, 16, 70);
+        doc.text(`• Tooth Configuration: ${toothProfile}`, 16, 77);
+
+        doc.text(`• Nominal Input Power: ${p} kW`, 110, 56);
+        doc.text(`• Pinion Velocity: ${n} RPM`, 110, 63);
+        doc.text(`• Structural Material: ${stressMat}`, 110, 70);
+        doc.text(`• Calculated Assembly Mass: ${weightVal}`, 110, 77);
+
+        // Section 2 Interactive Stage Graphics Canvas Mock
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(30, 41, 59);
+        doc.text("2. Primary Stage Structural Cross-Section Layout", 14, 92);
+        doc.line(14, 95, 196, 95);
+
+        const r1 = (z1 * m) / 2;
+        const r2 = (z2 * m) / 2;
+        const centerDistance = r1 + r2;
+        
+        const maxAllowedRadius = 35; 
+        const largestRealRadius = Math.max(r1, r2);
+        const scale = maxAllowedRadius / largestRealRadius;
+        
+        const p1_r = r1 * scale;
+        const p2_r = r2 * scale;
+        const canvasCenterX = 65; 
+        const canvasCenterY = 140; 
+        const p2_cx = canvasCenterX + (centerDistance * scale);
+
+        // Pinion Render
+        doc.setStrokeColor(30, 64, 175); 
+        doc.setLineWidth(0.6);
+        doc.circle(canvasCenterX, canvasCenterY, p1_r, 'S');
+        if(dh1 > 0) {
+            doc.setStrokeColor(148, 163, 184);
+            doc.circle(canvasCenterX, canvasCenterY, (dh1 / 2) * scale, 'S');
+        }
+        doc.circle(canvasCenterX, canvasCenterY, 1.0, 'F'); 
+        
+        // Gear Render
+        doc.setStrokeColor(6, 95, 70); 
+        doc.circle(p2_cx, canvasCenterY, p2_r, 'S');
+        if(dh2 > 0) {
+            doc.setStrokeColor(148, 163, 184);
+            doc.circle(p2_cx, canvasCenterY, (dh2 / 2) * scale, 'S');
+        }
+        doc.circle(p2_cx, canvasCenterY, 1.0, 'F'); 
+
+        // Cross Section Graphical Labels
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(30, 64, 175);
+        doc.text(`Pinion (Z1=${z1})`, canvasCenterX - 12, canvasCenterY - p1_r - 4);
+        doc.text(`d1 = ${(r1*2).toFixed(1)}mm`, canvasCenterX - 12, canvasCenterY - p1_r - 0.5);
+
+        doc.setTextColor(6, 95, 70);
+        doc.text(`Driven Gear (Z2=${z2})`, p2_cx - 14, canvasCenterY - p2_r - 4);
+        doc.text(`d2 = ${(r2*2).toFixed(1)}mm`, p2_cx - 14, canvasCenterY - p2_r - 0.5);
+
+        doc.setTextColor(71, 85, 105);
+        doc.setFont("Helvetica", "normal");
+        doc.text(`Center Distance: ${centerDistance.toFixed(2)} mm`, canvasCenterX + 5, canvasCenterY + 42);
+
+        // Section 3 Compliance Validation Output
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(30, 41, 59);
+        doc.text("3. Structural Bending Compliance & Deflection Status", 14, 195);
+        doc.line(14, 198, 196, 198);
+
+        if (passStatus) {
+            doc.setFillColor(209, 250, 229); 
+            doc.setStrokeColor(16, 185, 129);
+            doc.rect(14, 204, 182, 18, 'DF');
+            doc.setTextColor(6, 95, 70);
             doc.setFontSize(10);
-            doc.setFont("Helvetica", "normal");
-            doc.setTextColor(...textDark);
-
-            const specMatrixRows = [
-                ["Input Energy Configuration Power:", `${cachedState.P} kW`],
-                ["Rotational Driving Velocity Speed:", `${cachedState.n1} RPM`],
-                ["Teeth Configurations Ratio Array (Z1/Z2):", `${cachedState.Z1}T / ${cachedState.Z2}T`],
-                ["Module Profiling Factor Size (m):", `${cachedState.m} mm`],
-                ["Structural Tooth Face Width (b):", `${cachedState.b} mm`],
-                ["Hollow Center Shaft Configurations (OD/ID):", `${cachedState.d_o} mm / ${cachedState.d_i} mm`]
-            ];
-
-            specMatrixRows.forEach(row => {
-                doc.setFont("Helvetica", "bold");
-                doc.text(row[0], 20, y);
-                doc.setFont("Helvetica", "normal");
-                doc.text(row[1], 115, y);
-                y += 6;
-            });
-
-            y += 6;
-
-            // Stress Metrics Section
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(12);
-            doc.setTextColor(...brandColor);
-            doc.text("2. AGMA METALLURGY STRESS ASSESSMENT EVALUATIONS", 15, y);
-            doc.line(15, y + 2, 195, y + 2);
-            
-            y += 10;
+            doc.text(`PASS // COMBINED LOADING ENVELOPE STABLE. APPLIED STRESS: ${stressVal}`, 20, 215);
+        } else {
+            doc.setFillColor(254, 226, 226); 
+            doc.setStrokeColor(239, 68, 68);
+            doc.rect(14, 204, 182, 18, 'DF');
+            doc.setTextColor(153, 27, 27);
             doc.setFontSize(10);
-            
-            doc.setFont("Helvetica", "bold");
-            doc.text("Calculated Tooth Bending Stress:", 20, y);
-            doc.setFont("Helvetica", "normal");
-            doc.text(`${cachedState.sigmaBending.toFixed(2)} MPa`, 115, y);
-            
-            y += 6;
-            doc.setFont("Helvetica", "bold");
-            doc.text("Allowable Material Failure Threshold Limit:", 20, y);
-            doc.setFont("Helvetica", "normal");
-            doc.text(`${cachedState.allowSigma} MPa`, 115, y);
-
-            y += 10;
-            
-            // Structural Evaluation Safe Flag status fields panel alerts
-            const statusLabelBoxColor = cachedState.systemPasses ? [209, 250, 229] : [254, 226, 226];
-            const statusLabelTextColor = cachedState.systemPasses ? [6, 95, 70] : [153, 27, 27];
-            const statusLabelMessage = cachedState.systemPasses 
-                ? "EVALUATION VERDICT: PASS // STRUCTURAL SAFETY FACTOR RATIO COMPLIANT" 
-                : "EVALUATION VERDICT: FAILURE CRITICAL // STRESS OVER MATERIAL BOUNDARY EXCEEDED";
-
-            doc.setFillColor(...statusLabelBoxColor);
-            doc.rect(15, y, 180, 12, 'F');
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(9);
-            doc.setTextColor(...statusLabelTextColor);
-            doc.text(statusLabelMessage, 105, y + 7.5, { align: "center" });
-
-            // Trigger dynamic binary downloading framework protocols actions strings
-            doc.save("SpurGearPro_Analytical_Report.pdf");
+            doc.text(`FAIL // SPECIFIED ENVELOPE EXCEEDS LIMITS or ROOT REINFORCEMENT CRITICAL`, 20, 215);
         }
 
-        // Run verification routine lifecycle once on initial load bootstrap pipeline execution paths
-        window.addEventListener('DOMContentLoaded', calculateSystem);
-    </script>
+        // Footer Information
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text("SpurGear Pro Solid Mechanics Verification Suite Engine. Calculated via exact Modified Lewis Formula metrics.", 14, 285);
+
+        doc.save(`SpurGearPro-WeightReport-${Date.now()}.pdf`);
+    }
+</script>
+
 </body>
 </html>

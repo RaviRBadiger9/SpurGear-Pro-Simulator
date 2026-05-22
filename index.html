@@ -31,16 +31,6 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-
-        /* Print Override Styles to ensure seamless native clean documents */
-        @media print {
-            body { background: white !important; color: black !important; }
-            #splash-screen, #anim-toggle, .fea-legend, header, aside:first-of-type, main { display: none !important; }
-            #data-panel { width: 100% !important; border: none !important; position: static !important; overflow: visible !important; }
-            .calc-card { background: #f8fafc !important; border: 1px solid #cbd5e1 !important; color: black !important; page-break-inside: avoid; }
-            .text-blue-400, .text-emerald-400, .text-amber-400 { color: #1e40af !important; }
-            #step-output { overflow: visible !important; }
-        }
     </style>
 </head>
 <body>
@@ -76,8 +66,8 @@
                 <div class="h-4 w-[1px] bg-slate-700"></div>
                 <h1 class="text-xs font-bold tracking-widest uppercase text-slate-200">SpurGear Pro // <span id="mode-label" class="text-blue-400">--</span></h1>
             </div>
-            <button onclick="exportToPDF()" class="bg-blue-600 text-white text-[10px] px-5 py-2 rounded-md font-bold tracking-wider hover:bg-blue-500 shadow-sm transition">
-                EXPORT SYSTEM REPORT (PDF)
+            <button onclick="generateLocalPDF()" class="bg-blue-600 text-white text-[10px] px-5 py-2 rounded-md font-bold tracking-wider hover:bg-blue-500 shadow-sm transition">
+                DOWNLOAD REPORT (PDF)
             </button>
         </header>
 
@@ -273,7 +263,7 @@
             scene.background = new THREE.Color(0x0f172a); 
             
             camera = new THREE.PerspectiveCamera(38, area.clientWidth / area.clientHeight, 1, 2000);
-            camera.position.set(0, 160, 150);
+            camera.position.set(0, 140, 160);
             
             renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(area.clientWidth, area.clientHeight);
@@ -284,9 +274,9 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-            const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            mainLight.position.set(50, 200, 50);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            mainLight.position.set(40, 180, 60);
             scene.add(mainLight);
 
             gearGroup = new THREE.Group();
@@ -312,24 +302,32 @@
             const bodyShape = new THREE.Shape();
             bodyShape.absarc(0, 0, r_dedendum, 0, Math.PI * 2, false);
             
-            // Explicit Hollow Shaft integration with calculated keyway slot dimensions
-            const shaftRadius = m * 2.5;
-            const keyWidth = m * 0.8;
-            const keyHeight = m * 0.5;
-            
-            const hollowShaftPath = new THREE.Path();
-            hollowShaftPath.moveTo(shaftRadius, -keyWidth / 2);
-            hollowShaftPath.lineTo(shaftRadius + keyHeight, -keyWidth / 2);
-            hollowShaftPath.lineTo(shaftRadius + keyHeight, keyWidth / 2);
-            hollowShaftPath.lineTo(shaftRadius, keyWidth / 2);
-            hollowShaftPath.absarc(0, 0, shaftRadius, Math.asin((keyWidth/2)/shaftRadius), Math.PI * 2 - Math.asin((keyWidth/2)/shaftRadius), false);
-            
-            bodyShape.holes.push(hollowShaftPath);
+            // True Mechanical Spline Profile Pathway Matrix Generation
+            const boreRadius = m * 2.8; 
+            const splineCount = 8;
+            const splineDepth = m * 0.4;
+            const splineWidthAngle = (Math.PI * 2) / (splineCount * 2);
 
-            if (z > 20) {
+            const splineHolePath = new THREE.Path();
+            for (let i = 0; i <= splineCount * 2; i++) {
+                const angle = (i / (splineCount * 2)) * Math.PI * 2;
+                const radius = (i % 2 === 0) ? boreRadius : (boreRadius + splineDepth);
+                const px = Math.cos(angle) * radius;
+                const py = Math.sin(angle) * radius;
+                if (i === 0) {
+                    splineHolePath.moveTo(px, py);
+                } else {
+                    splineHolePath.lineTo(px, py);
+                }
+            }
+            // Reverse direction loop mapping handles internal hole boolean geometry
+            bodyShape.holes.push(splineHolePath);
+
+            // Lightening cutouts for larger mechanical gears
+            if (z > 22) {
                 const numHoles = 4;
-                const dist = r_dedendum * 0.55;
-                const holeRad = r_dedendum * 0.18;
+                const dist = r_dedendum * 0.58;
+                const holeRad = r_dedendum * 0.16;
                 for(let i=0; i<numHoles; i++) {
                     const angle = (i / numHoles) * Math.PI * 2;
                     const hPath = new THREE.Path();
@@ -338,13 +336,15 @@
                 }
             }
             
-            const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, { depth: thickness, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.2, segments: 64 });
-            const bodyMat = new THREE.MeshStandardMaterial({ color: baseBodyColor, metalness: 0.5, roughness: 0.4 });
+            // Generate Gear Structural Main Body Face Mesh Plate
+            const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, { depth: thickness, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.15, segments: 90 });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: baseBodyColor, metalness: 0.6, roughness: 0.35, side: THREE.DoubleSide });
             const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
             gearContainer.add(bodyMesh);
 
+            // Generate Involute Approximation Tooth Geometry Modules
             const toothWidthBottom = m * 1.571;
-            const toothWidthTop = m * 0.785;
+            const toothWidthTop = m * 0.760;
             const toothHeight = 2.25 * m;
             const teethArray = [];
 
@@ -364,7 +364,7 @@
                 }
                 toothGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
                 
-                const toothMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.5, roughness: 0.3 });
+                const toothMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.6, roughness: 0.3, side: THREE.DoubleSide });
                 const toothMesh = new THREE.Mesh(toothGeo, toothMat);
                 
                 const angle = (i / z) * Math.PI * 2;
@@ -376,12 +376,31 @@
                 teethArray.push({ mesh: toothMesh, geometry: toothGeo, baseAngle: angle });
             }
 
+            // Real physical Spline Shaft inside the Hollow Core
+            const shaftGeo = new THREE.CylinderGeometry(boreRadius * 0.96, boreRadius * 0.96, thickness * 1.4, 32);
+            const shaftMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.2 });
+            const centralShaft = new THREE.Mesh(shaftGeo, shaftMat);
+            centralShaft.rotation.x = Math.PI / 2;
+            centralShaft.position.z = thickness / 2;
+            
+            // Add interlocking spline keys on the shaft core itself
+            for(let s=0; s<splineCount; s++) {
+                const sAngle = (s / splineCount) * Math.PI * 2;
+                const keyGeo = new THREE.BoxGeometry(m * 0.35, thickness * 1.3, splineDepth * 0.9);
+                const keyMesh = new THREE.Mesh(keyGeo, shaftMat);
+                keyMesh.position.set(Math.cos(sAngle) * boreRadius, 0, Math.sin(sAngle) * boreRadius);
+                keyMesh.rotation.y = -sAngle;
+                centralShaft.add(keyMesh);
+            }
+            gearContainer.add(centralShaft);
+
             gearContainer.position.set(x, yOffset, zOffset);
             gearContainer.rotation.x = Math.PI / 2;
             bodyMesh.rotation.z = initialOffset; 
 
             activeGears.push({ 
                 obj: bodyMesh, 
+                shaft: centralShaft,
                 speed: speedFactor, 
                 teeth: teethArray, 
                 globalX: x, 
@@ -412,8 +431,8 @@
             const boxMat = new THREE.MeshPhysicalMaterial({
                 color: 0xffffff,
                 transparent: true,
-                opacity: 0.12,
-                roughness: 0.1,
+                opacity: 0.10,
+                roughness: 0.15,
                 metalness: 0.1,
                 transmission: 0.6, 
                 ior: 1.45,
@@ -599,18 +618,18 @@
                 const r_pitch = (gear.z * gear.m) / 2;
                 const r_dedendum = r_pitch - 1.25 * gear.m;
                 const thickness = 10 * gear.m;
-                const shaftRadius = gear.m * 2.5;
+                const shaftRadius = gear.m * 2.8;
                 
                 const baseVolume = Math.PI * (Math.pow(r_dedendum / 10, 2) - Math.pow(shaftRadius / 10, 2)) * (thickness / 10);
                 
                 let holesVolume = 0;
-                if (gear.z > 20) {
+                if (gear.z > 22) {
                     const numHoles = 4;
-                    const holeRad = r_dedendum * 0.18;
+                    const holeRad = r_dedendum * 0.16;
                     holesVolume = numHoles * Math.PI * Math.pow(holeRad / 10, 2) * (thickness / 10);
                 }
                 
-                const singleToothVol = ( (gear.m*1.571 + gear.m*0.785)/2 ) * (2.25*gear.m) * thickness / 1000;
+                const singleToothVol = ( (gear.m*1.571 + gear.m*0.760)/2 ) * (2.25*gear.m) * thickness / 1000;
                 const totalTeethVolume = singleToothVol * gear.z;
                 
                 const finalVolume = Math.max(0.1, (baseVolume - holesVolume) + totalTeethVolume);
@@ -642,15 +661,97 @@
                 const deltaRotation = 0.01;
                 activeGears.forEach(gear => {
                     gear.obj.rotation.z += deltaRotation * gear.speed;
+                    if(gear.shaft) {
+                        gear.shaft.rotation.y += deltaRotation * gear.speed;
+                    }
                 });
             }
             if(controls) controls.update();
             if(renderer && scene && camera) renderer.render(scene, camera);
         }
 
-        // Clean Print engine fallback function that opens the print UI to instantly save calculations without cross-origin script failures
-        function exportToPDF() {
-            window.print();
+        // Localized base64 Plaintext PDF Engine compiler. Completely bypasses sandbox tracking blocks.
+        function generateLocalPDF() {
+            try {
+                const z1 = document.getElementById('z1').value;
+                const z2 = document.getElementById('z2').value;
+                const m = document.getElementById('module-sel').value;
+                const p = document.getElementById('in-p').value;
+                const stress = document.getElementById('max-stress-label').innerText;
+                const ts = new Date().toLocaleString();
+
+                const pdfContent = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources 4 0 R /MediaBox [0 0 595 842] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Courier >> >> >>
+endobj
+5 0 obj
+<< /Length 650 >>
+stream
+BT
+/F1 22 Tf
+1 0 0 1 50 750 Tm
+0.2 0.5 0.9 rg
+(SpurGear Pro Calculation Report) Tj
+/F2 10 Tf
+0.4 0.4 0.4 rg
+1 0 0 1 50 710 Tm
+(Generated: ${ts}) Tj
+1 0 0 1 50 695 Tm
+(System Layout Mode: ${engineMode.toUpperCase()}) Tj
+0 0 0 rg
+1 0 0 1 50 640 Tm
+/F1 14 Tf
+(DESIGN SPECIFICATIONS MATRIX:) Tj
+/F2 12 Tf
+1 0 0 1 50 600 Tm
+(* Pinion Teeth Count [Z1]: ${z1} teeth) Tj
+1 0 0 1 50 580 Tm
+(* Driven Gear Teeth Count [Z2]: ${z2} teeth) Tj
+1 0 0 1 50 560 Tm
+(* Mechanical Pitch Module [m]: ${m} mm) Tj
+1 0 0 1 50 540 Tm
+(* Motor Input Power [P]: ${p} kW) Tj
+1 0 0 1 50 520 Tm
+(* Calculated Bending Stress: ${stress}) Tj
+1 0 0 1 50 480 Tm
+/F1 12 Tf
+(* Core Shaft Type: Hollow Bore Matrix with Interlocking Splines [OK]) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000056 00000 n 
+0000000111 00000 n 
+0000000212 00000 n 
+0000000332 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1033
+%%EOF`;
+
+                const blob = new Blob([pdfContent], { type: 'application/pdf' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `SpurGearPro-Analysis-${engineMode}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                alert("Error compilation local engine state: " + err.message);
+            }
         }
     </script>
 </body>

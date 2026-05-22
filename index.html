@@ -27,7 +27,7 @@
         .calc-card { animation: slideIn 0.3s ease-out forwards; }
         #anim-toggle { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 50; }
         
-        .fea-legend { position: absolute; bottom: 30px; right: 540px; width: 180px; background: rgba(30, 41, 59, 0.9); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 10px; box-shadow: 0 4px 6px rgb(0 0 0 / 0.3); z-index: 40; }
+        .fea-legend { position: absolute; bottom: 30px; right: 560px; width: 180px; background: rgba(30, 41, 59, 0.9); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 10px; box-shadow: 0 4px 6px rgb(0 0 0 / 0.3); z-index: 40; }
         .gradient-bar { height: 10px; width: 100%; background: linear-gradient(to right, #1e40af, #f59e0b, #ef4444); border-radius: 2px; margin: 6px 0; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
@@ -363,7 +363,6 @@
             bounds.getSize(size);
             bounds.getCenter(center);
 
-            // Expand casing buffer parameters around components
             const padX = size.x + 12;
             const padY = size.y + 8;
             const padZ = size.z + 12;
@@ -384,7 +383,6 @@
             transparentCasing = new THREE.Mesh(boxGeo, boxMat);
             transparentCasing.position.copy(center);
             
-            // Generate clear structural outer wireframe bounds
             const wireframeGeo = new THREE.EdgesGeometry(boxGeo);
             const wireframeMat = new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 1 });
             const wireframeLines = new THREE.LineSegments(wireframeGeo, wireframeMat);
@@ -522,170 +520,168 @@
 
                 <div class="calc-card p-3 border rounded-md ${safetyStatus}">
                     <b class="uppercase text-[9px] block mb-1">Security Verification</b>
-                    <div>Bending Stress: <span class="font-bold">${bendingStress.toFixed(1)} MPa</span></div>
-                    <div>Is Metal Limit (${fs.toFixed(1)} N) > Actual Shock Load (${fd.toFixed(1)} N)?</div>
-                    <div class="mt-2 pt-1.5 border-t border-white/10 text-[10px] uppercase font-bold tracking-wider">
-                        STATUS: ${isSafe ? 'PASS // SAFE TO OPERATE' : 'FAIL // MATERIAL WILL BREAK'}
+                    <div>Bending Stress: <span class="font-bold">${bendingStress.toFixed(2)} MPa</span></div>
+                    <div>Allowable Stress Limit: <span class="font-bold">${sigma0} MPa</span></div>
+                    <div class="mt-2 font-bold text-xs uppercase tracking-wider">
+                        ${isSafe ? '✓ Structure Safe' : '⚠ Deflection Structural Risk'}
                     </div>
-                </div>
-            `;
-        }
-
-        function generatePDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            
-            // Header Base
-            doc.setFillColor(15, 23, 42);
-            doc.rect(0, 0, 210, 32, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(14);
-            doc.text("SPURGEAR PRO // INDUSTRIAL SPECIFICATION SHEET", 14, 14);
-            doc.setFontSize(9);
-            doc.setFont("Helvetica", "normal");
-            doc.text(`Configuration Profile: ${engineMode.toUpperCase()} TRAIN SYSTEM`, 14, 22);
-
-            // Add Design Metrics Text
-            doc.setTextColor(15, 23, 42);
-            doc.setFontSize(11);
-            doc.setFont("Helvetica", "bold");
-            doc.text("1. Mechanical Configuration Variables", 14, 45);
-            
-            doc.setFont("Helvetica", "normal");
-            doc.setFontSize(9);
-            let yPos = 52;
-            
-            const inputs = ['z1', 'z2', 'module-sel', 'in-p', 'in-n'];
-            inputs.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) {
-                    doc.text(`${el.previousElementSibling?.innerText || id}: ${el.value}`, 20, yPos);
-                    yPos += 6;
-                }
-            });
-
-            // Section 2: Mathematical Analytical Stream
-            yPos += 6;
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(11);
-            doc.text("2. Process Calculations & Verification Stream", 14, yPos);
-            yPos += 8;
-
-            doc.setFont("Courier", "bold");
-            doc.setFontSize(8);
-            const cards = document.querySelectorAll('#step-output .calc-card');
-            cards.forEach(card => {
-                const lines = card.innerText.split('\n');
-                lines.forEach(line => {
-                    if(yPos > 240) { doc.addPage(); yPos = 20; }
-                    doc.text(line, 16, yPos);
-                    yPos += 4.5;
-                });
-                yPos += 3;
-            });
-
-            // Capture 3D Render Canvas to inject as Vector Sketch layout 
-            try {
-                // Temporarily position camera overhead for a perfect clean orthographic alignment vector layout
-                const oldPos = camera.position.clone();
-                const oldTarget = controls.target.clone();
-                
-                // Hide transparent casing elements temporarily to retain zero noise blueprint data lines
-                if(transparentCasing) transparentCasing.visible = false;
-                
-                camera.position.set(0, 220, 0);
-                controls.target.set(0,0,0);
-                controls.update();
-                renderer.render(scene, camera);
-
-                const dataURL = renderer.domElement.toDataURL('image/png');
-                
-                // Reset positions right after image sequence captures
-                camera.position.copy(oldPos);
-                controls.target.copy(oldTarget);
-                controls.update();
-                if(transparentCasing) transparentCasing.visible = true;
-
-                doc.addPage();
-                doc.setFillColor(15, 23, 42);
-                doc.rect(0, 0, 210, 20, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFont("Helvetica", "bold");
-                doc.setFontSize(10);
-                doc.text("APPENDIX A: CAD PROJECTION SKETCH DIAGRAM", 14, 12);
-
-                // Insert into layout
-                doc.addImage(dataURL, 'PNG', 15, 30, 180, 120);
-                
-                doc.setTextColor(100, 116, 139);
-                doc.setFont("Helvetica", "normal");
-                doc.setFontSize(8);
-                doc.text("* Diagram displays 2D technical footprint with tooth profile contact positions projected onto the pitch diameters.", 14, 160);
-
-            } catch(e) {
-                console.error("Vector Capture failed", e);
-            }
-
-            doc.save(`SpurGearPro_Analytical_Report.pdf`);
+                </div>`;
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            if(controls) controls.update();
-
-            if(isAnimating) {
-                const rpm = parseFloat(document.getElementById('in-n').value) || 0;
-                const step = (rpm * Math.PI) / 90000; 
-
+            if (isAnimating && activeGears.length > 0) {
+                const angleIncrement = 0.01;
+                
                 activeGears.forEach(gear => {
-                    gear.obj.rotation.z += step * gear.speed;
-                    const currentRotation = gear.obj.rotation.z;
-                    
-                    gear.teeth.forEach(tooth => {
-                        const globalToothAngle = tooth.baseAngle + currentRotation;
-                        let isMeshing = false;
-                        
-                        if(gear.targetMeshX !== null) {
-                            const theoreticalMeshAngle = (gear.targetMeshX > gear.globalX) ? 0 : Math.PI;
-                            let angleDiff = Math.abs((globalToothAngle % (Math.PI * 2)) - theoreticalMeshAngle);
-                            if(angleDiff > Math.PI) angleDiff = (Math.PI * 2) - angleDiff;
-                            
-                            if (angleDiff < 0.25) {
-                                isMeshing = true;
-                            }
-                        }
-                        
-                        const colorAttr = tooth.geometry.attributes.color;
-                        const targetColor = new THREE.Color();
-                        
-                        if (isMeshing) {
-                            targetColor.setHex(0xef4444); 
-                        } else {
-                            targetColor.setHex(gear.baseBodyColor);
-                        }
-                        
-                        const rAttr = colorAttr.getX(0);
-                        const gAttr = colorAttr.getY(0);
-                        const bAttr = colorAttr.getZ(0);
-                        
-                        if (Math.abs(rAttr - targetColor.r) > 0.01 || 
-                            Math.abs(gAttr - targetColor.g) > 0.01 || 
-                            Math.abs(bAttr - targetColor.b) > 0.01) {
-                            
-                            for(let c=0; c<colorAttr.count; c++) {
-                                colorAttr.setXYZ(c, targetColor.r, targetColor.g, targetColor.b);
-                            }
-                            colorAttr.needsUpdate = true;
-                        }
-                    });
+                    gear.obj.rotation.z += angleIncrement * gear.speed;
                 });
+
+                for (let i = 0; i < activeGears.length; i++) {
+                    const gA = activeGears[i];
+                    if (gA.targetMeshX === null) continue;
+
+                    gA.teeth.forEach(tNode => {
+                        const currentGlobalAngle = gA.obj.rotation.z + tNode.baseAngle;
+                        const worldX = gA.globalX + Math.cos(currentGlobalAngle) * ((gA.teeth.length * parseFloat(document.getElementById('module-sel').value)) / 2 - 1);
+                        
+                        const distanceToMesh = Math.abs(worldX - gA.targetMeshX);
+                        const cAttr = tNode.geometry.attributes.color;
+                        const stressColor = new THREE.Color(gA.baseBodyColor);
+
+                        if (distanceToMesh < parseFloat(document.getElementById('module-sel').value) * 1.5) {
+                            stressColor.setRGB(0.95, 0.4, 0.1); 
+                        }
+
+                        for (let c = 0; c < cAttr.count; c++) {
+                            cAttr.setXYZ(c, stressColor.r, stressColor.g, stressColor.b);
+                        }
+                        cAttr.needsUpdate = true;
+                    });
+                }
+            }
+            if(controls) controls.update();
+            if(renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 297, 'F');
+            
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(59, 130, 246);
+            doc.text("SpurGear Pro System Report", 15, 25);
+            
+            doc.setFontSize(10);
+            doc.setFont("Helvetica", "normal");
+            doc.setTextColor(148, 163, 184);
+            doc.text("Generated configuration overview with localized structural math values.", 15, 32);
+            
+            doc.setDrawColor(51, 65, 85);
+            doc.line(15, 38, 195, 38);
+            
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(255, 255, 255);
+            doc.text("1. SYSTEM INPUT SPECIFICATIONS", 15, 48);
+            
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(203, 213, 225);
+            
+            let y = 56;
+            const inputs = [
+                ["Configuration Mode", engineMode.toUpperCase()],
+                ["Power Input (kW)", document.getElementById('in-p').value],
+                ["Pinion Speed (RPM)", document.getElementById('in-n').value],
+                ["Module standard size (mm)", document.getElementById('module-sel').value],
+                ["Pinion teeth count (Z1)", document.getElementById('z1').value],
+                ["Gear teeth count (Z2)", document.getElementById('z2').value]
+            ];
+            
+            inputs.forEach(row => {
+                doc.text(row[0] + ":", 20, y);
+                doc.text(row[1], 110, y);
+                y += 7;
+            });
+            
+            doc.line(15, y + 3, 195, y + 3);
+            y += 12;
+            
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(255, 255, 255);
+            doc.text("2. DESIGN RISK AND CALCULATIONS EVALUATION", 15, y);
+            y += 8;
+            
+            doc.setFont("Courier", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(148, 163, 184);
+            
+            const element = document.getElementById('step-output');
+            const lines = element.innerText.split('\n');
+            lines.forEach(line => {
+                if(y > 220) {
+                    doc.addPage();
+                    doc.setFillColor(15, 23, 42);
+                    doc.rect(0, 0, 210, 297, 'F');
+                    y = 25;
+                }
+                if(line.trim() !== "") {
+                    doc.text(line, 20, y);
+                    y += 5;
+                }
+            });
+            
+            if(y > 200) {
+                doc.addPage();
+                doc.setFillColor(15, 23, 42);
+                doc.rect(0, 0, 210, 297, 'F');
+                y = 25;
             }
             
-            if(renderer && scene && camera) {
-                renderer.render(scene, camera);
-            }
+            y += 10;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(255, 255, 255);
+            doc.text("3. SYSTEM SCALE DIAGRAM (2D SKETCH)", 15, y);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 150;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, 400, 150);
+            
+            const z1 = parseInt(document.getElementById('z1').value) || 20;
+            const z2 = parseInt(document.getElementById('z2').value) || 50;
+            const r1 = z1 * 1.2;
+            const r2 = z2 * 1.2;
+            
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(120, 75, r1, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(120 + r1 + r2, 75, r2, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px Arial';
+            ctx.fillText(`Pinion (Z=${z1})`, 100, 78);
+            ctx.fillText(`Gear (Z=${z2})`, 120 + r1 + r2 - 20, 78);
+            
+            const imgData = canvas.toDataURL('image/jpeg');
+            doc.addImage(imgData, 'JPEG', 15, y + 5, 180, 65);
+            
+            doc.save("SpurGearPro_Analytical_Report.pdf");
         }
     </script>
 </body>

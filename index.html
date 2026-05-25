@@ -11,7 +11,7 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght=400;700&family=Inter:wght=400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; margin: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; margin: 0; overflow-x: hidden; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
         input, select { background: #1e293b !important; border: 1px solid #475569 !important; color: #f8fafc !important; padding: 0.4rem; font-size: 0.75rem; border-radius: 6px; width: 100%; transition: border-color 0.2s; }
@@ -27,7 +27,7 @@
         .calc-card { animation: slideIn 0.3s ease-out forwards; }
         #anim-toggle { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 50; }
         
-        .fea-legend { position: absolute; bottom: 30px; right: 560px; width: 180px; background: rgba(30, 41, 59, 0.9); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 10px; box-shadow: 0 4px 6px rgb(0 0 0 / 0.3); z-index: 40; }
+        .fea-legend { position: absolute; bottom: 30px; right: 580px; width: 180px; background: rgba(30, 41, 59, 0.9); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 10px; box-shadow: 0 4px 6px rgb(0 0 0 / 0.3); z-index: 40; }
         .gradient-bar { height: 10px; width: 100%; background: linear-gradient(to right, #1e40af, #f59e0b, #ef4444); border-radius: 2px; margin: 6px 0; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
@@ -197,7 +197,7 @@
                 <div id="render-area" class="w-full h-full"></div>
             </main>
 
-            <aside id="data-panel" class="w-full lg:w-[560px] glass border-t lg:border-t-0 lg:border-l border-slate-800 p-5 h-auto lg:h-[calc(100vh-3.5rem)] lg:sticky lg:top-14 flex flex-col overflow-y-auto shadow-sm space-y-4">
+            <aside id="data-panel" class="w-full lg:w-[580px] glass border-t lg:border-t-0 lg:border-l border-slate-800 p-5 h-auto lg:h-[calc(100vh-3.5rem)] lg:sticky lg:top-14 flex flex-col overflow-y-auto shadow-sm space-y-4">
                 <h2 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex-shrink-0">
                     Analytical Structural Performance & Charting Dashboard
                 </h2>
@@ -226,11 +226,9 @@
         let scene, camera, renderer, controls, gearGroup, engineMode, transparentCasing;
         let activeGears = []; 
         let isAnimating = true;
-
-        // Configuration memory variables for unified report compiling integration
         let globalCalcResults = {};
         
-        // Global Chart Instance References
+        // Tracking variables for dynamic visualization layers
         let stressChartInstance = null;
         let curveChartInstance = null;
 
@@ -412,32 +410,3 @@
             activeGears.push({ 
                 obj: bodyMesh, 
                 shaft: centralShaft,
-                speed: speedFactor, 
-                teeth: teethArray, 
-                globalX: x, 
-                globalZ: zOffset, 
-                targetMeshX: targetMeshX,
-                baseBodyColor: baseBodyColor,
-                z: z,
-                m: m
-            });
-
-            return gearContainer;
-        }
-
-        function rebuildTransparentCasing() {
-            if(transparentCasing) scene.remove(transparentCasing);
-
-            const bounds = new THREE.Box3().setFromObject(gearGroup);
-            const size = new THREE.Vector3();
-            const center = new THREE.Vector3();
-            bounds.getSize(size);
-            bounds.getCenter(center);
-
-            const padX = size.x + 12;
-            const padY = size.y + 8;
-            const padZ = size.z + 12;
-
-            const boxGeo = new THREE.BoxGeometry(padX, padY, padZ);
-            const boxMat = new THREE.MeshPhysicalMaterial({
-                color:

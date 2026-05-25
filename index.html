@@ -54,7 +54,6 @@
         .btn-main:hover { background: #2563eb; }
         .hidden { display: none !important; }
         
-        /* Localized Blueprint Stylesheet Print Engine Setup */
         @media print {
             body { background: #ffffff !important; color: #000000 !important; font-size: 12pt; }
             header, aside.sidebar-left, main.viewport-center, #splash-screen, #toggleBtn { display: none !important; }
@@ -72,7 +71,7 @@
 
     <div id="splash-screen">
         <h2 style="font-size: 36px; font-weight: bold; margin-bottom: 8px;">SpurGear Pro</h2>
-        <p style="color: #94a3b8; font-size: 14px;">Contact Stress Solver with Adaptive 13mm Geometric Safety Clearance</p>
+        <p style="color: #94a3b8; font-size: 14px;">Contact Stress Solver with Profile-Wrapped Contoured Transmission Housing</p>
         
         <div class="option-grid">
             <div class="option-card" onclick="launchEngine('single')">
@@ -278,7 +277,7 @@
             scene.background = new THREE.Color(0x0f172a);
             
             camera = new THREE.PerspectiveCamera(38, area.clientWidth / area.clientHeight, 1, 2000);
-            camera.position.set(0, 140, 160);
+            camera.position.set(0, 160, 200);
             
             renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(area.clientWidth, area.clientHeight);
@@ -289,10 +288,14 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            const light = new THREE.DirectionalLight(0xffffff, 0.9);
-            light.position.set(40, 180, 60);
-            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const light1 = new THREE.DirectionalLight(0xffffff, 0.85);
+            light1.position.set(50, 180, 70);
+            scene.add(light1);
+            
+            const light2 = new THREE.DirectionalLight(0x38bdf8, 0.4);
+            light2.position.set(-60, -100, -50);
+            scene.add(light2);
 
             gearGroup = new THREE.Group();
             scene.add(gearGroup);
@@ -407,41 +410,134 @@
             return gearContainer;
         }
 
-        // Precise Dynamic Bounding Offset Casing Engine (Absolute 13mm Air Gap Requirement)
+        // Upgraded Contoured Cast Gearbox Casing Solver Engine (Maintains Exact 13mm Clearance Profile Wall)
         function rebuildTransparentCasing() {
             if(transparentCasing) scene.remove(transparentCasing);
-            
-            const bounds = new THREE.Box3().setFromObject(gearGroup);
-            const gearSize = new THREE.Vector3();
-            const center = new THREE.Vector3();
-            bounds.getSize(gearSize);
-            bounds.getCenter(center);
+            transparentCasing = new THREE.Group();
 
-            const targetClearance = 13; // 13mm absolute separation gap
-            
-            const casingWidth  = gearSize.x + (2 * targetClearance);
-            const casingHeight = gearSize.y + (2 * targetClearance);
-            const casingDepth  = gearSize.z + (2 * targetClearance);
+            if (activeGears.length === 0) return;
 
-            const boxGeo = new THREE.BoxGeometry(casingWidth, casingHeight, casingDepth);
-            const boxMat = new THREE.MeshPhysicalMaterial({
-                color: 0x38bdf8,
-                transparent: true,
-                opacity: 0.12,
-                roughness: 0.1,
-                metalness: 0.1,
-                transmission: 0.6,
-                ior: 1.5,
-                side: THREE.DoubleSide,
-                depthWrite: false
+            const clearance = 13; // Mandatory 13mm air gap offset
+            const m = activeGears[0].m;
+            const faceWidth = 10 * m;
+            const wallThickness = 4; // Casting wall structure thickness
+            
+            // 1. Map center coordinates and total active sizing parameters
+            let profileCenters = [];
+            activeGears.forEach(g => {
+                const r_outer = ((g.z * g.m) / 2) + g.m; // Addendum edge radius
+                profileCenters.push({ x: g.globalX, z: g.globalZ, r: r_outer + clearance });
             });
-            transparentCasing = new THREE.Mesh(boxGeo, boxMat);
-            transparentCasing.position.copy(center);
+
+            // 2. Generate a continuous profile-wrapped contour path matching the layout
+            const casingShape = new THREE.Shape();
             
-            const wireframeGeo = new THREE.EdgesGeometry(boxGeo);
-            const lineMat = new THREE.LineBasicMaterial({ color: 0x0ea5e9, linewidth: 2 });
-            transparentCasing.add(new THREE.LineSegments(wireframeGeo, lineMat));
+            if (engineMode === 'single') {
+                const p1 = profileCenters[0];
+                const p2 = profileCenters[1];
+                
+                // Sweep outer profile arcs with geometric transitions
+                casingShape.absarc(p1.x, p1.z, p1.r, Math.PI * 0.5, Math.PI * 1.5, false);
+                casingShape.absarc(p2.x, p2.z, p2.r, Math.PI * 1.5, Math.PI * 0.5, false);
+            } else {
+                // Compound/Double multi-stage curved trajectory hull mapping
+                let minX = Math.min(...profileCenters.map(p => p.x - p.r));
+                let maxX = Math.max(...profileCenters.map(p => p.x + p.r));
+                let minZ = Math.min(...profileCenters.map(p => p.z - p.r));
+                let maxZ = Math.max(...profileCenters.map(p => p.z + p.r));
+                
+                casingShape.moveTo(minX, minZ);
+                casingShape.lineTo(maxX, minZ);
+                casingShape.lineTo(maxX, maxZ);
+                casingShape.lineTo(minX, maxZ);
+                casingShape.lineTo(minX, minZ);
+            }
+
+            // 3. Extrude main housing profile half wall
+            const extrudeHeight = (faceWidth / 2) + clearance;
+            const casingGeo = new THREE.ExtrudeGeometry(casingShape, {
+                depth: extrudeHeight,
+                bevelEnabled: true,
+                bevelThickness: 1.5,
+                bevelSize: 1,
+                segments: 64
+            });
+
+            const casingMat = new THREE.MeshPhysicalMaterial({
+                color: 0x94a3b8,
+                transparent: true,
+                opacity: 0.35,          // Clear enough to monitor matching elements inside
+                roughness: 0.4,
+                metalness: 0.6,
+                transmission: 0.3,
+                side: THREE.DoubleSide,
+                depthWrite: true
+            });
+
+            const mainHousingMesh = new THREE.Mesh(casingGeo, casingMat);
+            mainHousingMesh.rotation.x = -Math.PI / 2; // Orient safely into alignment plane
+            mainHousingMesh.position.y = -clearance;  // Push down to establish split-line view
+            transparentCasing.add(mainHousingMesh);
+
+            // 4. Generate Mating Split Flange Ring Profile
+            const flangeFlaredShape = casingShape.clone(); 
+            const flangeGeo = new THREE.ExtrudeGeometry(flangeFlaredShape, {
+                depth: 5, // Flange lip thick standard thickness
+                bevelEnabled: false,
+                segments: 64
+            });
+            const flangeMat = new THREE.MeshStandardMaterial({
+                color: 0x64748b,
+                metalness: 0.7,
+                roughness: 0.3,
+                side: THREE.DoubleSide
+            });
+            const flangeMesh = new THREE.Mesh(flangeGeo, flangeMat);
+            flangeMesh.rotation.x = -Math.PI / 2;
+            flangeMesh.position.y = 0; // Exactly on the split joint line
+            transparentCasing.add(flangeMesh);
+
+            // 5. Place Bolt Configuration Along the Flange Perimeter
+            const boltGeo = new THREE.CylinderGeometry(3, 3, 6, 16);
+            const boltMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.1 });
             
+            profileCenters.forEach((p, idx) => {
+                for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
+                    const bx = p.x + Math.cos(a) * (p.r + 6);
+                    const bz = p.z + Math.sin(a) * (p.r + 6);
+                    const bolt = new THREE.Mesh(boltGeo, boltMat);
+                    bolt.position.set(bx, 2.5, bz);
+                    transparentCasing.add(bolt);
+                }
+            });
+
+            // 6. Generate Structural Stiffening Support Ribs
+            profileCenters.forEach(p => {
+                const ribGeo = new THREE.BoxGeometry(4, extrudeHeight, p.r * 0.25);
+                const ribMat = casingMat.clone();
+                ribMat.opacity = 0.5; // Stiffeners look slightly denser
+                
+                // Back rib
+                const rib1 = new THREE.Mesh(ribGeo, ribMat);
+                rib1.position.set(p.x, -extrudeHeight/2, p.z - p.r + (p.r * 0.125));
+                rib1.rotation.x = Math.PI / 2;
+                transparentCasing.add(rib1);
+
+                // Front rib
+                const rib2 = new THREE.Mesh(ribGeo, ribMat);
+                rib2.position.set(p.x, -extrudeHeight/2, p.z + p.r - (p.r * 0.125));
+                rib2.rotation.x = Math.PI / 2;
+                transparentCasing.add(rib2);
+            });
+
+            // 7. Outline blueprint geometry borders
+            const wireframeGeo = new THREE.EdgesGeometry(casingGeo);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 1 });
+            const contourLines = new THREE.LineSegments(wireframeGeo, lineMat);
+            contourLines.rotation.x = -Math.PI / 2;
+            contourLines.position.y = -clearance;
+            transparentCasing.add(contourLines);
+
             scene.add(transparentCasing);
         }
 
@@ -507,6 +603,7 @@
                 gearGroup.add(createGearMesh(z4, m, mesh1Center + (d3+d4)/2, structuralPalette.output, b + 4, 0, (1/gearRatio)*(z3/z4), Math.PI/z4, mesh1Center));
             }
 
+            // Run the wrapper reconstruction engine
             rebuildTransparentCasing();
 
             const modules = [1, 2, 3, 4, 5, 6, 8];

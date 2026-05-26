@@ -3,824 +3,550 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpurGear Pro | Industrial Gearbox Design Suite</title>
-    
+    <title>VibeSim Pro - Structural Fatigue Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0f172a; color: #f1f5f9; overflow-x: hidden; }
-        .mono { font-family: monospace; }
-        
-        header { height: 56px; background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: sticky; top: 0; z-index: 20; }
-        .app-container { display: flex; flex-direction: row; min-height: calc(100vh - 56px); width: 100vw; }
-        
-        aside.sidebar-left { width: 320px; background: #0f172a; border-right: 1px solid #1e293b; padding: 20px; overflow-y: auto; height: calc(100vh - 56px); }
-        main.viewport-center { flex: 1; background: #1e293b; position: relative; height: calc(100vh - 56px); }
-        aside.sidebar-right { width: 540px; background: #0f172a; border-left: 1px solid #1e293b; padding: 20px; overflow-y: auto; height: calc(100vh - 56px); display: flex; flex-direction: column; gap: 16px; }
-        
-        .section-title { font-size: 10px; font-weight: bold; color: #3b82f6; text-transform: uppercase; border-bottom: 1px solid #1e293b; padding-bottom: 8px; margin-bottom: 12px; letter-spacing: 1px; }
-        .input-group { margin-bottom: 12px; }
-        label { display: block; font-size: 9px; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; letter-spacing: 0.5px; }
-        input, select { background: #1e293b; border: 1px solid #475569; color: #f8fafc; padding: 6px 8px; font-size: 12px; border-radius: 6px; width: 100%; }
-        input:focus, select:focus { border-color: #3b82f6; outline: none; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        
-        #splash-screen { position: fixed; inset: 0; background: #090d16; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .option-grid { display: flex; gap: 24px; justify-content: center; margin-top: 40px; }
-        .option-card { background: #1e293b; padding: 30px 20px; border-radius: 12px; width: 280px; cursor: pointer; border: 2px solid transparent; text-align: left; transition: all 0.2s ease; }
-        .option-card:hover { transform: translateY(-4px); border-color: #3b82f6; background: #243249; }
-        .badge { font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .badge-blue { background: rgba(59,130,246,0.2); color: #60a5fa; }
-        .badge-purple { background: rgba(139,92,246,0.2); color: #a78bfa; }
-        .badge-amber { background: rgba(245,158,11,0.2); color: #fbbf24; }
-        
-        .calc-card { background: rgba(30, 41, 59, 0.4); border: 1px solid #1e293b; padding: 12px; border-radius: 8px; font-size: 11px; }
-        .status-panel { padding: 16px; border-radius: 8px; border: 1px solid transparent; display: flex; flex-direction: column; gap: 4px; }
-        .status-safe { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #34d399; }
-        .status-failed { background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.3); color: #f43f5e; }
-        
-        #toggleBtn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 50; background: #0f172a; color: #f1f5f9; border: 1px solid #475569; padding: 10px 20px; border-radius: 9999px; font-size: 10px; font-weight: bold; cursor: pointer; letter-spacing: 1px; }
-        .fea-legend { position: absolute; bottom: 20px; right: 20px; width: 180px; background: rgba(15, 23, 42, 0.9); padding: 12px; border-radius: 8px; border: 1px solid #1e293b; font-size: 10px; z-index: 40; }
-        .gradient-bar { height: 8px; width: 100%; background: linear-gradient(to right, #1e40af, #f59e0b, #ef4444); border-radius: 2px; margin: 6px 0; }
-        
-        .chart-box { background: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b; padding: 12px; border-radius: 8px; }
-        .chart-container-1 { height: 160px; position: relative; }
-        .chart-container-2 { height: 130px; position: relative; }
-        
-        .btn-main { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .btn-main:hover { background: #2563eb; }
-        .hidden { display: none !important; }
-        
-        @media print {
-            body { background: #ffffff !important; color: #000000 !important; font-size: 12pt; }
-            header, aside.sidebar-left, main.viewport-center, #splash-screen, #toggleBtn { display: none !important; }
-            .app-container { display: block; width: 100%; }
-            aside.sidebar-right { width: 100% !important; border: none !important; background: transparent !important; padding: 0 !important; display: block !important; }
-            .chart-box, .calc-card, .status-panel { background: #ffffff !important; border: 1px solid #000000 !important; color: #000000 !important; page-break-inside: avoid; margin-bottom: 15px; box-shadow: none !important; }
-            span, div, label { color: #000000 !important; }
-            .status-safe { border-left: 6px solid #10b981 !important; }
-            .status-failed { border-left: 6px solid #f43f5e !important; }
-            .section-title { color: #000000 !important; border-bottom: 2px solid #000000 !important; font-size: 14pt; margin-top: 20px; }
+        .glassmorphic {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans overflow-x-hidden">
 
-    <div id="splash-screen">
-        <h2 style="font-size: 36px; font-weight: bold; margin-bottom: 8px;">SpurGear Pro</h2>
-        <p style="color: #94a3b8; font-size: 14px;">Contact Stress Solver with Profile-Wrapped Contoured Transmission Housing</p>
+    <header class="border-b border-slate-800 bg-slate-900/50 px-6 py-4 flex justify-between items-center sticky top-0 z-50 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" id="statusIndicator"></div>
+            <h1 class="text-xl font-bold tracking-wider bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">VIBESIM PRO</h1>
+            <span class="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-400 border border-slate-700 font-mono">v2.1-Fatigue</span>
+        </div>
+        <div class="text-sm font-mono text-slate-400" id="globalTimer">Simulation Time: 0.00s</div>
+    </header>
+
+    <main class="p-6 grid grid-cols-1 xl:grid-cols-4 gap-6 h-[calc(100vh-73px)] overflow-y-auto">
         
-        <div class="option-grid">
-            <div class="option-card" onclick="launchEngine('single')">
-                <span class="badge badge-blue">Standard</span>
-                <h3 style="margin-top: 10px; font-size: 16px;">Single Stage Mesh</h3>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Standard 2-gear reduction mesh layout with active profile contact modeling.</p>
-            </div>
-            <div class="option-card" onclick="launchEngine('double')">
-                <span class="badge badge-purple">Extended</span>
-                <h3 style="margin-top: 10px; font-size: 16px;">Double Stage</h3>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Multi-stage structural reduction line utilizing dual independent contact links.</p>
-            </div>
-            <div class="option-card" onclick="launchEngine('compound')">
-                <span class="badge badge-amber">Advanced</span>
-                <h3 style="margin-top: 10px; font-size: 16px;">Compound Train</h3>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Coaxial power alignment pairing two standard profiles to the same shaft space.</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="main-engine" class="hidden">
-        <header>
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <button onclick="location.reload()" style="background: #1e293b; border: 1px solid #475569; color: #cbd5e1; padding: 4px 10px; font-size: 10px; font-weight: bold; border-radius: 4px; cursor: pointer;">← MENU</button>
-                <h1 style="font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">SpurGear Pro // <span id="mode-label" style="color: #3b82f6;">--</span></h1>
-            </div>
-            <button class="btn-main" onclick="window.print()">DOWNLOAD REPORT</button>
-        </header>
-
-        <div class="app-container">
-            <aside class="sidebar-left">
-                <div class="section-title">Design Constraints</div>
+        <section class="xl:col-span-1 flex flex-col gap-4">
+            <div class="glassmorphic p-5 rounded-xl flex flex-col gap-4">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">System Parameters</h2>
                 
-                <div class="input-group">
-                    <label>Material Stress Limit</label>
-                    <select id="material-stress" onchange="updateDesign()">
-                        <option value="47.1">Cast Iron Grade 20 (47.1 MPa)</option>
-                        <option value="78.5">Cast Iron Grade 35 (78.5 MPa)</option>
-                        <option value="138.3">Cast Steel (138.3 MPa)</option>
-                        <option value="233.4" selected>Steel C45 (233.4 MPa)</option>
-                        <option value="345.2">Alloy Steel (345.2 MPa)</option>
-                    </select>
-                </div>
-
-                <div class="input-group">
-                    <label>Contact Materials</label>
-                    <select id="mat-pair" onchange="updateDesign()">
-                        <option value="ST_ST" selected>Steel & Steel</option>
-                        <option value="CI_CI">Cast Iron & Cast Iron</option>
-                        <option value="CI_ST">Cast Iron & Steel</option>
-                    </select>
-                </div>
-
-                <div class="grid-2">
-                    <div class="input-group">
-                        <label>Load Type</label>
-                        <select id="load-type" onchange="updateDesign()">
-                            <option value="steady">Steady</option>
-                            <option value="medium" selected>Medium Shock</option>
-                            <option value="heavy">Heavy Shock</option>
-                        </select>
+                <div>
+                    <div class="flex justify-between text-xs font-mono mb-1">
+                        <span>Mass ($m$)</span>
+                        <span id="massVal" class="text-cyan-400">1.0 kg</span>
                     </div>
-                    <div class="input-group">
-                        <label>Duty Cycle</label>
-                        <select id="service-type" onchange="updateDesign()">
-                            <option value="intermittent">Intermittent</option>
-                            <option value="standard" selected>Standard</option>
-                            <option value="continuous">Continuous</option>
-                        </select>
+                    <input type="range" id="massInput" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full accent-emerald-500 bg-slate-800 h-1.5 rounded-lg appearance-none">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-mono mb-1">
+                        <span>Stiffness ($k$)</span>
+                        <span id="stiffVal" class="text-cyan-400">150 N/m</span>
                     </div>
+                    <input type="range" id="stiffInput" min="10" max="500" step="10" value="150" class="w-full accent-emerald-500 bg-slate-800 h-1.5 rounded-lg appearance-none">
                 </div>
 
-                <div class="grid-2">
-                    <div class="input-group">
-                        <label>Tooth Profile</label>
-                        <select id="tooth-system" onchange="updateDesign()">
-                            <option value="14.5">14.5° Involute</option>
-                            <option value="20" selected>20° Full Depth</option>
-                            <option value="20stub">20° Stub</option>
-                        </select>
+                <div>
+                    <div class="flex justify-between text-xs font-mono mb-1">
+                        <span>Damping ($c$)</span>
+                        <span id="dampVal" class="text-cyan-400">0.2 Ns/m</span>
                     </div>
-                    <div class="input-group">
-                        <label>Mfg. Quality</label>
-                        <select id="gear-error" onchange="updateDesign()">
-                            <option value="0.01">Class I (0.01mm)</option>
-                            <option value="0.03" selected>Class II (0.03mm)</option>
-                            <option value="0.06">Class III (0.06mm)</option>
-                        </select>
+                    <input type="range" id="dampInput" min="0.0" max="2.0" step="0.05" value="0.2" class="w-full accent-emerald-500 bg-slate-800 h-1.5 rounded-lg appearance-none">
+                </div>
+            </div>
+
+            <div class="glassmorphic p-5 rounded-xl flex flex-col gap-4">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">Base Harmonic Excitation</h2>
+                <div>
+                    <div class="flex justify-between text-xs font-mono mb-1">
+                        <span>Amplitude ($Y$)</span>
+                        <span id="ampVal" class="text-emerald-400">0.05 m</span>
                     </div>
+                    <input type="range" id="ampInput" min="0.01" max="0.2" step="0.01" value="0.05" class="w-full accent-emerald-500 bg-slate-800 h-1.5 rounded-lg appearance-none">
                 </div>
-
-                <div class="input-group">
-                    <label>Module Size (m)</label>
-                    <select id="module-sel" onchange="updateDesign()">
-                        <option value="1">1.0 mm</option><option value="2">2.0 mm</option>
-                        <option value="3" selected>3.0 mm</option><option value="4">4.0 mm</option>
-                        <option value="5">5.0 mm</option><option value="6">6.0 mm</option><option value="8">8.0 mm</option>
-                    </select>
-                </div>
-
-                <div class="grid-2" style="border-top: 1px solid #1e293b; padding-top: 10px; margin-top: 10px;">
-                    <div class="input-group"><label>Power (kW)</label><input type="number" id="in-p" value="15" oninput="updateDesign()"></div>
-                    <div class="input-group"><label>Input (RPM)</label><input type="number" id="in-n" value="1200" oninput="updateDesign()"></div>
-                </div>
-
-                <div class="grid-2">
-                    <div class="input-group"><label>Pinion Z1</label><input type="number" id="z1" value="20" oninput="updateDesign()"></div>
-                    <div class="input-group"><label>Gear Z2</label><input type="number" id="z2" value="50" oninput="updateDesign()"></div>
-                </div>
-
-                <div id="multi-stage-inputs" class="hidden grid-2">
-                    <div class="input-group"><label>Pinion Z3</label><input type="number" id="z3" value="18" oninput="updateDesign()"></div>
-                    <div class="input-group"><label>Gear Z4</label><input type="number" id="z4" value="45" oninput="updateDesign()"></div>
-                </div>
-
-                <div style="margin-top: 16px;">
-                    <button onclick="calculateSystemWeight()" style="width: 100%; background: #1e293b; color: #60a5fa; border: 1px solid #475569; padding: 8px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">RUN TRAIN WEIGHT CHECK</button>
-                    <div id="weight-display" class="hidden calc-card mono" style="margin-top: 8px; color: #94a3b8; line-height: 1.6;">
-                        <div style="color: white; font-weight: bold; border-bottom: 1px solid #1e293b; padding-bottom: 4px; margin-bottom: 4px;">Volumetric Mass Diagnostics</div>
-                        <div>Pinion (Z1): <span id="w-z1" style="color: #3b82f6;">0.00 kg</span></div>
-                        <div>Gear (Z2): <span id="w-z2" style="color: #3b82f6;">0.00 kg</span></div>
-                        <div id="w-stage2" class="hidden">
-                            <div>Pinion (Z3): <span id="w-z3" style="color: #3b82f6;">0.00 kg</span></div>
-                            <div>Gear (Z4): <span id="w-z4" style="color: #3b82f6;">0.00 kg</span></div>
-                        </div>
-                        <div style="border-top: 1px solid #1e293b; margin-top: 4px; padding-top: 4px; font-weight: bold; color: #34d399;">Total Mass: <span id="w-total">0.00 kg</span></div>
+                <div>
+                    <div class="flex justify-between text-xs font-mono mb-1">
+                        <span>Frequency ($\omega$)</span>
+                        <span id="freqVal" class="text-emerald-400">12.2 rad/s</span>
                     </div>
+                    <input type="range" id="freqInput" min="1" max="30" step="0.1" value="12.2" class="w-full accent-emerald-500 bg-slate-800 h-1.5 rounded-lg appearance-none">
                 </div>
-            </aside>
+                <div class="text-center font-mono text-xs bg-slate-900/80 border border-slate-800 p-2 rounded text-slate-400" id="resonanceNotice">
+                    Natural Frequency ($\omega_n$): 12.25 rad/s
+                </div>
+            </div>
 
-            <main class="viewport-center">
-                <button id="toggleBtn" onclick="toggleAnimation()">DRIVE MOTOR: ENGAGED</button>
-                <div class="fea-legend mono">
-                    <div class="font-bold text-white mb-0.5">Active Mesh Tooth FEA</div>
-                    <div class="gradient-bar"></div>
-                    <div style="display: flex; justify-content: space-between; font-size: 8px; color: #94a3b8;">
-                        <span>Base Body Color</span>
-                        <span id="max-stress-label">Max Stress</span>
-                    </div>
+            <div class="glassmorphic p-5 rounded-xl flex flex-col gap-3 border-amber-500/20 bg-amber-950/5">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-amber-400 border-b border-amber-900/40 pb-2">Fatigue Life Criteria</h2>
+                <div class="flex justify-between text-xs font-mono">
+                    <span>Max Allowable Strain Energy:</span>
+                    <span class="text-amber-400" id="energyLimitLabel">3.50 J</span>
                 </div>
-                <div id="render-area" style="width: 100%; height: 100%;"></div>
-            </main>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                    <div id="fatigueProgressBar" class="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-full w-0 transition-all duration-100"></div>
+                </div>
+                <div class="flex justify-between text-xs font-mono text-slate-400 mt-1">
+                    <span>Structural Integrity:</span>
+                    <span id="integrityPercent">100%</span>
+                </div>
+            </div>
+        </section>
 
-            <aside class="sidebar-right">
-                <div class="section-title">Analytical Structural Performance & Charting Dashboard</div>
-                
-                <div class="chart-box">
-                    <label>Load vs Capacity Fail-Safe Threshold</label>
-                    <div class="chart-container-1"><canvas id="stressChart"></canvas></div>
-                </div>
-                <div class="chart-box">
-                    <label>Safety Factor Operating Curve vs Module Size</label>
-                    <div class="chart-container-2"><canvas id="factorCurveChart"></canvas></div>
+        <section class="xl:col-span-2 flex flex-col gap-4 relative">
+            <div class="glassmorphic rounded-xl overflow-hidden flex-1 min-h-[450px] relative" id="canvasContainer">
+                <div class="absolute top-4 left-4 z-10 flex flex-col gap-1 font-mono text-xs text-slate-300 pointer-events-none bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+                    <div>Deflection ($x - y$): <span id="diagDeflection" class="text-cyan-400">0.00 m</span></div>
+                    <div>Spring Force ($F_k$): <span id="diagForce" class="text-cyan-400">0.00 N</span></div>
+                    <div>Inst. Strain Energy ($U$): <span id="diagEnergy" class="text-amber-400">0.00 J</span></div>
                 </div>
 
-                <div id="step-output" class="mono" style="display: flex; flex-direction: column; gap: 10px;"></div>
-            </aside>
-        </div>
-    </div>
+                <div class="absolute bottom-4 right-4 z-10 flex gap-2">
+                    <button id="resetBtn" class="px-4 py-2 font-mono text-xs bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-700 transition-colors cursor-pointer">
+                        Reset Simulation
+                    </button>
+                    <button id="solutionBtn" class="px-4 py-2 font-mono text-xs bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors cursor-pointer" disabled>
+                        Apply Engineering Fix
+                    </button>
+                </div>
+
+                <div id="threejsMount" class="w-full h-full"></div>
+            </div>
+        </section>
+
+        <section class="xl:col-span-1 flex flex-col gap-4">
+            <div class="glassmorphic p-4 rounded-xl flex flex-col h-[230px]">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Phase Plane Analytics ($x$ vs $\dot{x}$)</h2>
+                <div class="flex-1 relative">
+                    <canvas id="telemetryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glassmorphic p-5 rounded-xl flex-1 flex flex-col border-slate-800" id="commentaryCard">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2 mb-3">Diagnostic Log & Solution</h2>
+                <div id="logTerminal" class="flex-1 font-mono text-xs overflow-y-auto space-y-2 text-slate-400 max-h-[300px] xl:max-h-none">
+                    <p class="text-emerald-400">[SYSTEM INFO] Initializing RK4 integration framework...</p>
+                    <p class="text-emerald-400">[SYSTEM INFO] Resonant matching enabled. Drive the base close to $\omega_n$ to accelerate failure.</p>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script>
-        let scene, camera, renderer, controls, gearGroup, engineMode, transparentCasing;
-        let activeGears = []; 
-        let isAnimating = true;
-        let globalCalcResults = {};
-        let stressChartInstance = null;
-        let curveChartInstance = null;
+        // --- Physical Constants & State Spaces ---
+        let m = 1.0, k = 150.0, c = 0.2;
+        let Y = 0.05, omega = 12.2;
+        
+        let t = 0.0;
+        const dt = 0.016; // Stable step size roughly mapping to ~60fps
+        let state = [0.0, 0.0]; // [displacement x, velocity x_dot]
+        
+        // --- Failure & Damage Accumulation Criteria ---
+        let cumulativeDamage = 0.0;
+        const damageThreshold = 100.0; // Point of fracture
+        const strainEnergyLimit = 3.5; // Threshold where deformation starts causing irreversible micro-void nucleation
+        let hasFailed = false;
+        let failureTime = null;
+        let solutionApplied = false;
 
-        const structuralPalette = { pinion: 0x1e40af, driven: 0x065f46, inter: 0xb45309, output: 0x6d28d9 };
-        const serviceFactorTable = {
-            steady: { intermittent: 0.8, standard: 1.0, continuous: 1.25 },
-            medium: { intermittent: 1.2, standard: 1.5, continuous: 1.8 },
-            heavy: { intermittent: 1.5, standard: 1.8, continuous: 2.0 }
-        };
+        // --- Three.js Scene Variables ---
+        let scene, camera, renderer, springMesh, massMesh, baseMesh;
+        const springCoils = 12;
+        const springRadius = 0.3;
 
-        const dynamicFactorC = {
-            "14.5": { "ST_ST": { "0.01": 110, "0.03": 330, "0.06": 660 }, "CI_CI": { "0.01": 55, "0.03": 165, "0.06": 331 } },
-            "20": { "ST_ST": { "0.01": 114, "0.03": 343, "0.06": 686 }, "CI_CI": { "0.01": 57, "0.03": 171, "0.06": 343 } },
-            "20stub": { "ST_ST": { "0.01": 118, "0.03": 356, "0.06": 712 }, "CI_CI": { "0.01": 59, "0.03": 178, "0.06": 356 } }
-        };
-        dynamicFactorC["14.5"]["CI_ST"] = dynamicFactorC["14.5"]["CI_CI"];
-        dynamicFactorC["20"]["CI_ST"] = dynamicFactorC["20"]["CI_CI"];
-        dynamicFactorC["20stub"]["CI_ST"] = dynamicFactorC["20stub"]["CI_CI"];
+        // --- ChartJS Handle ---
+        let chart;
+        const maxChartDataPoints = 150;
+        let chartDataPoints = [];
 
-        function toggleAnimation() {
-            isAnimating = !isAnimating;
-            document.getElementById('toggleBtn').innerText = isAnimating ? "DRIVE MOTOR: ENGAGED" : "DRIVE MOTOR: STOPPED";
-        }
+        // --- Initialize UI Handles ---
+        const massInput = document.getElementById('massInput');
+        const stiffInput = document.getElementById('stiffInput');
+        const dampInput = document.getElementById('dampInput');
+        const ampInput = document.getElementById('ampInput');
+        const freqInput = document.getElementById('freqInput');
+        
+        const massVal = document.getElementById('massVal');
+        const stiffVal = document.getElementById('stiffVal');
+        const dampVal = document.getElementById('dampVal');
+        const ampVal = document.getElementById('ampVal');
+        const freqVal = document.getElementById('freqVal');
+        
+        const resonanceNotice = document.getElementById('resonanceNotice');
+        const globalTimer = document.getElementById('globalTimer');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const fatigueProgressBar = document.getElementById('fatigueProgressBar');
+        const integrityPercent = document.getElementById('integrityPercent');
+        const logTerminal = document.getElementById('logTerminal');
+        const solutionBtn = document.getElementById('solutionBtn');
 
-        function launchEngine(mode) {
-            engineMode = mode;
-            document.getElementById('splash-screen').style.display = 'none';
-            document.getElementById('main-engine').classList.remove('hidden');
-            document.getElementById('mode-label').innerText = mode.toUpperCase() + " CONFIGURATION";
-            if(mode !== 'single') document.getElementById('multi-stage-inputs').classList.remove('hidden');
-            init3D();
-            updateDesign();
-        }
+        // --- Update Slider Parameters Dynamically ---
+        function updateParameters() {
+            m = parseFloat(massInput.value);
+            k = parseFloat(stiffInput.value);
+            c = parseFloat(dampInput.value);
+            Y = parseFloat(ampInput.value);
+            omega = parseFloat(freqInput.value);
 
-        function init3D() {
-            const area = document.getElementById('render-area');
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0f172a);
+            massVal.textContent = `${m.toFixed(1)} kg`;
+            stiffVal.textContent = `${k.toFixed(0)} N/m`;
+            dampVal.textContent = `${c.toFixed(2)} Ns/m`;
+            ampVal.textContent = `${Y.toFixed(2)} m`;
+            freqVal.textContent = `${omega.toFixed(1)} rad/s`;
+
+            const wn = Math.sqrt(k / m);
+            resonanceNotice.innerHTML = `Natural Frequency ($\omega_n$): ${wn.toFixed(2)} rad/s`;
             
-            camera = new THREE.PerspectiveCamera(38, area.clientWidth / area.clientHeight, 1, 2000);
-            camera.position.set(0, 160, 200);
-            
-            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-            renderer.setSize(area.clientWidth, area.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            area.appendChild(renderer.domElement);
-            
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-            const light1 = new THREE.DirectionalLight(0xffffff, 0.85);
-            light1.position.set(50, 180, 70);
-            scene.add(light1);
-            
-            const light2 = new THREE.DirectionalLight(0x38bdf8, 0.4);
-            light2.position.set(-60, -100, -50);
-            scene.add(light2);
-
-            gearGroup = new THREE.Group();
-            scene.add(gearGroup);
-            
-            window.addEventListener('resize', () => {
-                camera.aspect = area.clientWidth / area.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(area.clientWidth, area.clientHeight);
-            });
-            animate();
-        }
-
-        function createGearMesh(z, m, x, baseBodyColor, yOffset = 0, zOffset = 0, speedFactor = 1, initialOffset = 0, targetMeshX = null) {
-            const r_pitch = (z * m) / 2;
-            const r_dedendum = r_pitch - 1.25 * m;
-            const thickness = 10 * m;
-            const gearContainer = new THREE.Group();
-            
-            const bodyShape = new THREE.Shape();
-            bodyShape.absarc(0, 0, r_dedendum, 0, Math.PI * 2, false);
-            
-            const boreRadius = m * 2.8;
-            const splineCount = 8;
-            const splineDepth = m * 0.4;
-
-            const splineHolePath = new THREE.Path();
-            for (let i = 0; i <= splineCount * 2; i++) {
-                const angle = (i / (splineCount * 2)) * Math.PI * 2;
-                const radius = (i % 2 === 0) ? boreRadius : (boreRadius + splineDepth);
-                const px = Math.cos(angle) * radius;
-                const py = Math.sin(angle) * radius;
-                if (i === 0) splineHolePath.moveTo(px, py);
-                else splineHolePath.lineTo(px, py);
-            }
-            bodyShape.holes.push(splineHolePath);
-
-            if (z > 22) {
-                const numHoles = 4;
-                const dist = r_dedendum * 0.58;
-                const holeRad = r_dedendum * 0.16;
-                for(let i=0; i<numHoles; i++) {
-                    const angle = (i / numHoles) * Math.PI * 2;
-                    const hPath = new THREE.Path();
-                    hPath.absarc(Math.cos(angle)*dist, Math.sin(angle)*dist, holeRad, 0, Math.PI*2, true);
-                    bodyShape.holes.push(hPath);
-                }
-            }
-            
-            const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, { depth: thickness, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.15, segments: 90 });
-            const bodyMat = new THREE.MeshStandardMaterial({ color: baseBodyColor, metalness: 0.6, roughness: 0.35, side: THREE.DoubleSide });
-            const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            gearContainer.add(bodyMesh);
-
-            const toothWidthBottom = m * 1.571;
-            const toothWidthTop = m * 0.760;
-            const toothHeight = 2.25 * m;
-            const teethArray = [];
-
-            for (let i = 0; i < z; i++) {
-                const toothShape = new THREE.Shape();
-                toothShape.moveTo(-toothWidthBottom / 2, 0);
-                toothShape.lineTo(-toothWidthTop / 2, toothHeight);
-                toothShape.lineTo(toothWidthTop / 2, toothHeight);
-                toothShape.lineTo(toothWidthBottom / 2, 0);
-                
-                const toothGeo = new THREE.ExtrudeGeometry(toothShape, { depth: thickness, bevelEnabled: false });
-                const colors = [];
-                const parsedBaseColor = new THREE.Color(baseBodyColor);
-                for(let c=0; c<toothGeo.attributes.position.count; c++) {
-                    colors.push(parsedBaseColor.r, parsedBaseColor.g, parsedBaseColor.b);
-                }
-                toothGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-                
-                const toothMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.6, roughness: 0.3, side: THREE.DoubleSide });
-                const toothMesh = new THREE.Mesh(toothGeo, toothMat);
-                
-                const angle = (i / z) * Math.PI * 2;
-                toothMesh.position.x = Math.cos(angle) * r_dedendum;
-                toothMesh.position.y = Math.sin(angle) * r_dedendum;
-                toothMesh.rotation.z = angle - Math.PI / 2;
-                
-                bodyMesh.add(toothMesh);
-                teethArray.push({ mesh: toothMesh, geometry: toothGeo, baseAngle: angle });
-            }
-
-            const shaftGeo = new THREE.CylinderGeometry(boreRadius * 0.96, boreRadius * 0.96, thickness * 1.4, 32);
-            const shaftMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.2 });
-            const centralShaft = new THREE.Mesh(shaftGeo, shaftMat);
-            centralShaft.rotation.x = Math.PI / 2;
-            centralShaft.position.z = thickness / 2;
-            
-            for(let s=0; s<splineCount; s++) {
-                const sAngle = (s / splineCount) * Math.PI * 2;
-                const keyGeo = new THREE.BoxGeometry(m * 0.35, thickness * 1.3, splineDepth * 0.9);
-                const keyMesh = new THREE.Mesh(keyGeo, shaftMat);
-                keyMesh.position.set(Math.cos(sAngle) * boreRadius, 0, Math.sin(sAngle) * boreRadius);
-                keyMesh.rotation.y = -sAngle;
-                centralShaft.add(keyMesh);
-            }
-            gearContainer.add(centralShaft);
-
-            gearContainer.position.set(x, yOffset, zOffset);
-            gearContainer.rotation.x = Math.PI / 2;
-            bodyMesh.rotation.z = initialOffset;
-
-            activeGears.push({ 
-                obj: bodyMesh, shaft: centralShaft, speed: speedFactor, teeth: teethArray, 
-                globalX: x, globalZ: zOffset, targetMeshX: targetMeshX,
-                baseBodyColor: baseBodyColor, z: z, m: m 
-            });
-
-            return gearContainer;
-        }
-
-        // PROFILE-WRAPPED CONTOURED CAST CASING ENGINE
-        function rebuildTransparentCasing() {
-            if(transparentCasing) scene.remove(transparentCasing);
-            transparentCasing = new THREE.Group();
-
-            if (activeGears.length === 0) return;
-
-            const clearance = 13; 
-            const m = activeGears[0].m;
-            const faceWidth = 10 * m;
-            const wallThickness = 4; 
-            const flangeWidth = 16;
-            
-            let centers = [];
-            activeGears.forEach(g => {
-                const r_outer = ((g.z * g.m) / 2) + g.m; 
-                centers.push({ x: g.globalX, z: g.globalZ, r: r_outer + clearance, bore: g.m * 2.8 });
-            });
-
-            centers.sort((a, b) => a.x - b.x);
-
-            const pathInner = new THREE.Shape();
-            const pathOuter = new THREE.Shape();
-
-            if (centers.length === 2) {
-                const c1 = centers[0];
-                const c2 = centers[1];
-                const dx = c2.x - c1.x;
-                const dz = c2.z - c1.z;
-                const dist = Math.sqrt(dx*dx + dz*dz);
-                const angleBase = Math.atan2(dz, dx);
-                const angleOffset = Math.acos((c1.r - c2.r) / dist);
-
-                const a1 = angleBase + angleOffset;
-                const a2 = angleBase + (Math.PI * 2) - angleOffset;
-                const a3 = angleBase + Math.PI - angleOffset;
-                const a4 = angleBase + Math.PI + angleOffset;
-
-                pathInner.moveTo(c1.x + Math.cos(a1)*c1.r, c1.z + Math.sin(a1)*c1.r);
-                pathInner.arc(0,0,0,0,0,false); 
-                pathInner.absarc(c1.x, c1.z, c1.r, a1, a2, false);
-                pathInner.absarc(c2.x, c2.z, c2.r, a2, a1 + Math.PI*2, false);
-
-                pathOuter.absarc(c1.x, c1.z, c1.r + flangeWidth, a1, a2, false);
-                pathOuter.absarc(c2.x, c2.z, c2.r + flangeWidth, a2, a1 + Math.PI*2, false);
+            if (Math.abs(omega - wn) < 1.0) {
+                resonanceNotice.className = "text-center font-mono text-xs bg-rose-950/50 border border-rose-800 p-2 rounded text-rose-400 animate-pulse";
             } else {
-                let polyPoints = [];
-                centers.forEach((c, idx) => {
-                    if(idx === 0) {
-                        for(let a=Math.PI*0.5; a<=Math.PI*1.5; a+=0.1) polyPoints.push({x: c.x + Math.cos(a)*c.r, z: c.z + Math.sin(a)*c.r});
-                    } else if(idx === centers.length - 1) {
-                        for(let a=-Math.PI*0.5; a<=Math.PI*0.5; a+=0.1) polyPoints.push({x: c.x + Math.cos(a)*c.r, z: c.z + Math.sin(a)*c.r});
-                    } else {
-                        polyPoints.push({x: c.x, z: c.z - c.r});
-                        polyPoints.push({x: c.x, z: c.z + c.r});
-                    }
-                });
-                
-                polyPoints.sort((a,b) => a.x - b.x);
-                let upper = [], lower = [];
-                for (let p of polyPoints) {
-                    while (upper.length >= 2 && ((upper[upper.length-1].x - upper[upper.length-2].x)*(p.z - upper[upper.length-1].z) - (upper[upper.length-1].z - upper[upper.length-2].z)*(p.x - upper[upper.length-1].x)) >= 0) upper.pop();
-                    upper.push(p);
-                }
-                for (let i = polyPoints.length - 1; i >= 0; i--) {
-                    let p = polyPoints[i];
-                    while (lower.length >= 2 && ((lower[lower.length-1].x - lower[lower.length-2].x)*(p.z - lower[lower.length-1].z) - (lower[lower.length-1].z - lower[lower.length-2].z)*(p.x - lower[lower.length-1].x)) >= 0) lower.pop();
-                    lower.push(p);
-                }
-                lower.pop(); upper.pop();
-                let hull = upper.concat(lower);
-
-                pathInner.moveTo(hull[0].x, hull[0].z);
-                for(let i=1; i<hull.length; i++) pathInner.lineTo(hull[i].x, hull[i].z);
-                pathInner.lineTo(hull[0].x, hull[0].z);
-
-                pathOuter.moveTo(hull[0].x, hull[0].z - flangeWidth);
-                for(let i=1; i<hull.length; i++) {
-                    let dx = hull[i].x - hull[i-1].x;
-                    let dz = hull[i].z - hull[i-1].z;
-                    let len = Math.sqrt(dx*dx + dz*dz) || 1;
-                    pathOuter.lineTo(hull[i].x + (-dz/len)*flangeWidth, hull[i].z + (dx/len)*flangeWidth);
-                }
-                pathOuter.lineTo(hull[0].x, hull[0].z - flangeWidth);
+                resonanceNotice.className = "text-center font-mono text-xs bg-slate-900/80 border border-slate-800 p-2 rounded text-slate-400";
             }
-
-            const castCasingMat = new THREE.MeshPhysicalMaterial({
-                color: 0x38bdf8, transparent: true, opacity: 0.22, roughness: 0.2,
-                metalness: 0.8, transmission: 0.6, ior: 1.5, side: THREE.DoubleSide, depthWrite: true
-            });
-
-            const solidMetalMat = new THREE.MeshStandardMaterial({
-                color: 0x475569, metalness: 0.85, roughness: 0.3, side: THREE.DoubleSide
-            });
-
-            const extrudeDepth = (faceWidth * 0.5) + clearance;
-
-            const shellGeo = new THREE.ExtrudeGeometry(pathInner, {
-                depth: extrudeDepth, bevelEnabled: true, bevelThickness: 3, bevelSize: 2, bevelSegments: 5, segments: 64
-            });
-            const upperShellMesh = new THREE.Mesh(shellGeo, castCasingMat);
-            upperShellMesh.rotation.x = -Math.PI / 2;
-            upperShellMesh.position.y = 0; 
-            transparentCasing.add(upperShellMesh);
-
-            const lowerShellMesh = upperShellMesh.clone();
-            lowerShellMesh.scale.z = -1;
-            transparentCasing.add(lowerShellMesh);
-
-            const flangeLipShape = pathOuter.clone();
-            flangeLipShape.holes.push(pathInner);
-            const flangeGeo = new THREE.ExtrudeGeometry(flangeLipShape, { depth: 5, bevelEnabled: false, segments: 64 });
-            const flangeMesh = new THREE.Mesh(flangeGeo, solidMetalMat);
-            flangeMesh.rotation.x = -Math.PI / 2;
-            flangeMesh.position.y = -2.5; 
-            transparentCasing.add(flangeMesh);
-
-            centers.forEach(c => {
-                const hubRadius = c.bore * 1.8;
-                const hubGeo = new THREE.CylinderGeometry(hubRadius, hubRadius + 3, 12, 32);
-                
-                const upperHub = new THREE.Mesh(hubGeo, solidMetalMat);
-                upperHub.position.set(c.x, extrudeDepth, c.z);
-                transparentCasing.add(upperHub);
-
-                const lowerHub = upperHub.clone();
-                lowerHub.position.y = -extrudeDepth;
-                transparentCasing.add(lowerHub);
-
-                const ribShape = new THREE.Shape();
-                ribShape.moveTo(hubRadius, 0);
-                ribShape.lineTo(c.r * 0.9, 0);
-                ribShape.lineTo(hubRadius, extrudeDepth - 2);
-                ribShape.lineTo(hubRadius, 0);
-
-                const ribExtrudeGeo = new THREE.ExtrudeGeometry(ribShape, { depth: 4, bevelEnabled: false });
-                for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
-                    const ribMesh = new THREE.Mesh(ribExtrudeGeo, castCasingMat);
-                    ribMesh.position.set(c.x, 0, c.z);
-                    ribMesh.rotation.y = a;
-                    ribMesh.translateZ(-2); 
-                    transparentCasing.add(ribMesh);
-                }
-            });
-
-            const boltGeo = new THREE.CylinderGeometry(3.5, 3.5, 8, 16);
-            const capGeo = new THREE.CylinderGeometry(5.5, 5.5, 5, 16);
-            const boltMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.1 });
-
-            centers.forEach((c, idx) => {
-                const steps = 6;
-                for (let i = 0; i < steps; i++) {
-                    const angle = (i / steps) * Math.PI * 2 + (idx * 0.3);
-                    const bx = c.x + Math.cos(angle) * (c.r + flangeWidth * 0.5);
-                    const bz = c.z + Math.sin(angle) * (c.r + flangeWidth * 0.5);
-                    
-                    const padGeo = new THREE.CylinderGeometry(8, 8, 7, 16);
-                    const pad = new THREE.Mesh(padGeo, solidMetalMat);
-                    pad.position.set(bx, 0, bz);
-                    transparentCasing.add(pad);
-
-                    const bolt = new THREE.Mesh(boltGeo, boltMat);
-                    bolt.position.set(bx, 0, bz);
-                    transparentCasing.add(bolt);
-
-                    const cap = new THREE.Mesh(capGeo, boltMat);
-                    cap.position.set(bx, 4, bz);
-                    transparentCasing.add(cap);
-                }
-            });
-
-            const wireframeGeo = new THREE.EdgesGeometry(shellGeo);
-            const lineMat = new THREE.LineBasicMaterial({ color: 0x0ea5e9, linewidth: 1.5 });
-            const upperLines = new THREE.LineSegments(wireframeGeo, lineMat);
-            upperLines.rotation.x = -Math.PI / 2;
-            transparentCasing.add(upperLines);
-
-            const lowerLines = upperLines.clone();
-            lowerLines.scale.y = -1;
-            transparentCasing.add(lowerLines);
-
-            scene.add(transparentCasing);
         }
 
-        function updateDesign() {
-            if(!gearGroup) return;
-            while(gearGroup.children.length > 0) gearGroup.remove(gearGroup.children[0]);
-            activeGears = [];
-            document.getElementById('weight-display').classList.add('hidden');
-            
-            const z1 = Math.max(1, parseInt(document.getElementById('z1').value) || 1);
-            const z2 = Math.max(1, parseInt(document.getElementById('z2').value) || 1);
-            const z3 = Math.max(1, parseInt(document.getElementById('z3').value) || 1);
-            const z4 = Math.max(1, parseInt(document.getElementById('z4').value) || 1);
-            const m = parseFloat(document.getElementById('module-sel').value);
-            const p = parseFloat(document.getElementById('in-p').value) || 0;
-            const n1 = parseFloat(document.getElementById('in-n').value) || 1;
-            const toothType = document.getElementById('tooth-system').value;
-            const errorVal = document.getElementById('gear-error').value;
-            const matPair = document.getElementById('mat-pair').value;
-            const sigma0 = parseFloat(document.getElementById('material-stress').value);
-            const cs = serviceFactorTable[document.getElementById('load-type').value][document.getElementById('service-type').value];
-            const C = dynamicFactorC[toothType][matPair][errorVal];
+        [massInput, stiffInput, dampInput, ampInput, freqInput].forEach(input => {
+            input.addEventListener('input', updateParameters);
+        });
 
-            const d1 = z1 * m;
-            const d2 = z2 * m;
-            const b = 10 * m;
-            const gearRatio = z2 / z1;
-            
-            const v = parseFloat(((Math.PI * d1 * n1) / 60000).toFixed(3));
-            const ft = parseFloat(((1000 * p) / (v > 0 ? v : 1)).toFixed(2));
-            const ftEff = parseFloat((ft * cs).toFixed(2));
-            
-            const getY = (z) => (toothType === "20") ? 0.154 - (0.912/z) : (toothType === "20stub" ? 0.175 - (0.841/z) : 0.124 - (0.684/z));
-            const y1 = getY(z1), y2 = getY(z2);
-            const designY = (y1 <= y2) ? y1 : y2;
-
-            const fs = parseFloat((sigma0 * b * Math.PI * m * designY).toFixed(2));
-            const term1 = parseFloat((21 * v).toFixed(2));
-            const term2 = parseFloat(((b * C) + ftEff).toFixed(2));
-            const fd = parseFloat((ftEff + ((term1 * term2) / (term1 + Math.sqrt(term2)))).toFixed(2));
-            const bendingStress = (b * m * designY > 0) ? (ftEff / (b * m * designY)) : 0;
-            
-            document.getElementById('max-stress-label').innerText = bendingStress.toFixed(1) + " MPa";
-
-            globalCalcResults = { bendingStress: bendingStress, isSafe: fs > fd };
-
-            const mesh1Center = (d1 + d2) / 2;
-            if(engineMode === 'single') {
-                gearGroup.add(createGearMesh(z1, m, 0, structuralPalette.pinion, 0, 0, 1, 0, mesh1Center));
-                gearGroup.add(createGearMesh(z2, m, mesh1Center, structuralPalette.driven, 0, 0, -1/gearRatio, Math.PI/z2, 0));
-            } else if (engineMode === 'double') {
-                const d3 = z3 * m, d4 = z4 * m;
-                const mesh2Center = mesh1Center + (d3 + d4) / 2;
-                gearGroup.add(createGearMesh(z1, m, 0, structuralPalette.pinion, 0, 0, 1, 0, mesh1Center));
-                gearGroup.add(createGearMesh(z2, m, mesh1Center, structuralPalette.driven, 0, 0, -1/gearRatio, Math.PI/z2, 0));
-                gearGroup.add(createGearMesh(z3, m, mesh1Center, structuralPalette.inter, 0, d2, -1/gearRatio, 0, mesh2Center));
-                gearGroup.add(createGearMesh(z4, m, mesh2Center, structuralPalette.output, 0, d2, (1/gearRatio)*(z3/z4), Math.PI/z4, mesh1Center));
-            } else if (engineMode === 'compound') {
-                const d3 = z3 * m, d4 = z4 * m;
-                gearGroup.add(createGearMesh(z1, m, 0, structuralPalette.pinion, 0, 0, 1, 0, mesh1Center));
-                gearGroup.add(createGearMesh(z2, m, mesh1Center, structuralPalette.driven, 0, 0, -1/gearRatio, Math.PI/z2, 0));
-                gearGroup.add(createGearMesh(z3, m, mesh1Center, structuralPalette.inter, b + 4, 0, -1/gearRatio, 0, mesh1Center + (d3+d4)/2));
-                gearGroup.add(createGearMesh(z4, m, mesh1Center + (d3+d4)/2, structuralPalette.output, b + 4, 0, (1/gearRatio)*(z3/z4), Math.PI/z4, mesh1Center));
-            }
-
-            rebuildTransparentCasing();
-
-            const modules = [1, 2, 3, 4, 5, 6, 8];
-            const sweepData = modules.map(mOpt => {
-                const d1O = z1 * mOpt, bO = 10 * mOpt;
-                const vO = (Math.PI * d1O * n1) / 60000;
-                const ftO = ((1000 * p) / (vO > 0 ? vO : 1)) * cs;
-                const fsO = sigma0 * bO * Math.PI * mOpt * designY;
-                const fdO = ftO + (((21 * vO) * ((bO * C) + ftO)) / ((21 * vO) + Math.sqrt((bO * C) + ftO)));
-                return { module: mOpt, safetyFactor: fdO > 0 ? parseFloat((fsO / fdO).toFixed(2)) : 0 };
-            });
-
-            renderCharts(fs, fd, sweepData, m);
-
-            const isSafe = fs > fd;
-            document.getElementById('step-output').innerHTML = `
-                <div class="calc-card">
-                    <div style="color:#94a3b8; font-size:9px; font-weight:bold; margin-bottom:4px;">STEP 1 // PITCH LINE VELOCITY</div>
-                    <div>v = (&pi; &middot; d&sub1; &middot; n&sub1;) / 60000 = (&pi; &middot; ${d1} &middot; ${n1}) / 60000</div>
-                    <div style="color:#60a5fa; font-weight:bold; margin-top:2px;">v = ${v.toFixed(3)} m/s</div>
-                </div>
-                <div class="calc-card">
-                    <div style="color:#94a3b8; font-size:9px; font-weight:bold; margin-bottom:4px;">STEP 2 // TANGENTIAL & EFFECTIVE LOADS</div>
-                    <div>F_t = (1000 &middot; P) / v = (1000 &middot; ${p}) / ${v} = ${ft} N</div>
-                    <div style="margin-top:2px;">F_eff = F_t &middot; C_s = ${ft} &middot; ${cs}</div>
-                    <div style="color:#60a5fa; font-weight:bold; margin-top:2px;">F_eff = ${ftEff} N</div>
-                </div>
-                <div class="calc-card">
-                    <div style="color:#94a3b8; font-size:9px; font-weight:bold; margin-bottom:4px;">STEP 3 // FORM FACTORS & LEWIS BEAM STRENGTH</div>
-                    <div style="color:#94a3b8; margin-bottom:2px;">Y1 (Pinion): ${y1.toFixed(4)} | Y2 (Gear): ${y2.toFixed(4)}</div>
-                    <div>F_s = &sigma;&sub0; &middot; b &middot; &pi; &middot; m &middot; Y_design = ${sigma0} &middot; ${b} &middot; &pi; &middot; ${m} &middot; ${designY.toFixed(4)}</div>
-                    <div style="color:#60a5fa; font-weight:bold; margin-top:2px;">F_s = ${fs.toFixed(2)} N</div>
-                </div>
-                <div class="calc-card">
-                    <div style="color:#94a3b8; font-size:9px; font-weight:bold; margin-bottom:4px;">STEP 4 // BUCKINGHAM DYNAMIC LOAD</div>
-                    <div>F_d = F_eff + [21v(bC + F_eff)] / [21v + &radic;(bC + F_eff)]</div>
-                    <div style="color:#94a3b8; font-size:10px;">C-Value Matrix Constant: ${C} N/mm</div>
-                    <div style="color:#60a5fa; font-weight:bold; margin-top:2px;">F_d = ${fd.toFixed(2)} N</div>
-                </div>
-                <div class="status-panel ${isSafe ? 'status-safe' : 'status-failed'}">
-                    <div style="font-size:10px; font-weight:bold; text-transform:uppercase;">Structural Status Diagnostics</div>
-                    <div style="font-size:14px; font-weight:bold;">${isSafe ? 'DESIGN COMPLIANT (SAFE)' : 'STRUCTURAL FAILED (UNSAFE)'}</div>
-                    <div style="font-size:11px; margin-top:2px;">Beam Safety Factor Ratio: ${(fs / (fd > 0 ? fd : 1)).toFixed(2)} (F_s vs F_d)</div>
-                </div>
-            `;
+        // --- Logger Helper ---
+        function logToTerminal(message, textColorClass = "text-slate-400") {
+            const p = document.createElement('p');
+            p.className = textColorClass;
+            p.innerHTML = `[${t.toFixed(2)}s] ${message}`;
+            logTerminal.appendChild(p);
+            logTerminal.scrollTop = logTerminal.scrollHeight;
         }
 
-        function renderCharts(fs, fd, sweep, activeM) {
-            const ctx1 = document.getElementById('stressChart').getContext('2d');
-            const ctx2 = document.getElementById('factorCurveChart').getContext('2d');
+        // --- Initialize 3D Engine Context ---
+        function initThreeJS() {
+            const container = document.getElementById('threejsMount');
+            const width = container.clientWidth;
+            const height = container.clientHeight || 450;
 
-            if(stressChartInstance) stressChartInstance.destroy();
-            if(curveChartInstance) curveChartInstance.destroy();
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x090d16);
 
-            stressChartInstance = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: ['Beam Capacity (Fs)', 'Dynamic Load (Fd)'],
-                    datasets: [{
-                        data: [fs, fd],
-                        backgroundColor: [fs > fd ? 'rgba(52,211,153,0.85)' : 'rgba(244,63,94,0.85)', 'rgba(59,130,246,0.7)'],
-                        borderColor: [fs > fd ? '#10b981' : '#f43f5e', '#3b82f6'],
-                        borderWidth: 1,
-                        barThickness: 35
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.set(0, 2, 6);
+            camera.lookAt(0, 1.5, 0);
 
-            curveChartInstance = new Chart(ctx2, {
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            scene.add(dirLight);
+
+            // Floor/Base Ground Reference
+            const grid = new THREE.GridHelper(10, 20, 0x1e293b, 0x0f172a);
+            grid.position.y = 0;
+            scene.add(grid);
+
+            // Build Actor Meshes
+            // Base Excitator Platform
+            const baseGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.1, 32);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.2 });
+            baseMesh = new THREE.Mesh(baseGeo, baseMat);
+            scene.add(baseMesh);
+
+            // Top Dashboard Oscillation Bobble Mass
+            const massGeo = new THREE.SphereGeometry(0.4, 32, 32);
+            const massMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, metalness: 0.5, roughness: 0.3 });
+            massMesh = new THREE.Mesh(massGeo, massMat);
+            massMesh.position.y = 2.5;
+            scene.add(massMesh);
+
+            // Generate Procedural Helical Spring
+            generateSpringGeometry(2.5);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function generateSpringGeometry(length, isBroken = false) {
+            if (springMesh) scene.remove(springMesh);
+
+            if (isBroken) {
+                // Render Two Separate Broken Halves hanging off center axis
+                const group = new THREE.Group();
+                const pointsLower = [], pointsUpper = [];
+                
+                // Lower segment
+                for (let i = 0; i <= 60; i++) {
+                    const pct = (i / 120) * length;
+                    const theta = (i / 60) * (springCoils * Math.PI);
+                    pointsLower.push(new THREE.Vector3(Math.cos(theta) * springRadius - (pct*0.05), pct, Math.sin(theta) * springRadius));
+                }
+                // Upper segment offset outwards to simulate catastrophic fracture layout
+                for (let i = 65; i <= 120; i++) {
+                    const pct = (i / 120) * length;
+                    const theta = (i / 60) * (springCoils * Math.PI);
+                    pointsUpper.push(new THREE.Vector3(Math.cos(theta) * springRadius + (1-pct)*0.1, pct - 0.2, Math.sin(theta) * springRadius + 0.1));
+                }
+
+                const curveL = new THREE.CatmullRomCurve3(pointsLower);
+                const curveU = new THREE.CatmullRomCurve3(pointsUpper);
+
+                const geoL = new THREE.TubeGeometry(curveL, 60, 0.04, 8, false);
+                const geoU = new THREE.TubeGeometry(curveU, 60, 0.04, 8, false);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.9, roughness: 0.1 });
+
+                group.add(new THREE.Mesh(geoL, mat));
+                group.add(new THREE.Mesh(geoU, mat));
+                springMesh = group;
+                scene.add(springMesh);
+            } else {
+                // Render standard functional spring assembly
+                const points = [];
+                const segments = 120;
+                for (let i = 0; i <= segments; i++) {
+                    const pct = i / segments;
+                    const theta = pct * (springCoils * 2 * Math.PI);
+                    const y = pct * length;
+                    points.push(new THREE.Vector3(Math.cos(theta) * springRadius, y, Math.sin(theta) * springRadius));
+                }
+                const curve = new THREE.CatmullRomCurve3(points);
+                const geometry = new THREE.TubeGeometry(curve, segments, 0.04, 8, false);
+                const material = new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.9, roughness: 0.1 });
+                springMesh = new THREE.Mesh(geometry, material);
+                scene.add(springMesh);
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('threejsMount');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // --- Initialize Real-time Analytical Charts ---
+        function initChart() {
+            const ctx = document.getElementById('telemetryChart').getContext('2d');
+            chart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: sweep.map(s => s.module + 'mm'),
                     datasets: [{
-                        data: sweep.map(s => s.safetyFactor),
-                        borderColor: '#8b5cf6',
+                        label: 'State Space Trajectory',
+                        data: [],
+                        borderColor: '#06b6d4',
                         borderWidth: 2,
-                        tension: 0.2,
+                        pointRadius: 0,
                         fill: false,
-                        pointBackgroundColor: sweep.map(s => s.module === activeM ? '#f59e0b' : '#64748b'),
-                        pointRadius: sweep.map(s => s.module === activeM ? 7 : 4)
+                        tension: 0.4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Displacement x (m)', color: '#94a3b8' }, grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                        y: { title: { display: true, text: 'Velocity v (m/s)', color: '#94a3b8' }, grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
             });
         }
 
-        function calculateSystemWeight() {
-            const m = parseFloat(document.getElementById('module-sel').value);
-            const z1 = parseInt(document.getElementById('z1').value) || 0;
-            const z2 = parseInt(document.getElementById('z2').value) || 0;
-            const rho = 7.85e-6; 
-            const thickness = 10 * m;
+        // --- Physics Solver Logic: 4th-Order Runge-Kutta Engine ---
+        // Equation of motion: x_ddot = (1/m) * (-c * (x_dot - y_dot) - k * (x - y))
+        function derivatives(t, current_state) {
+            const x = current_state[0];
+            const x_dot = current_state[1];
 
-            const getWeight = (z) => {
-                const r_pitch = (z * m) / 2;
-                let volume = Math.PI * Math.pow(r_pitch, 2) * thickness;
-                if (z > 22) { 
-                    const r_dedendum = r_pitch - 1.25 * m;
-                    volume -= 4 * (Math.PI * Math.pow(r_dedendum * 0.16, 2) * thickness);
-                }
-                return volume * rho;
-            };
+            // Harmonic boundary base excitation kinematics
+            const y = Y * Math.sin(omega * t);
+            const y_dot = Y * omega * Math.cos(omega * t);
 
-            const w1 = getWeight(z1);
-            const w2 = getWeight(z2);
-            document.getElementById('w-z1').innerText = w1.toFixed(2) + " kg";
-            document.getElementById('w-z2').innerText = w2.toFixed(2) + " kg";
-            let total = w1 + w2;
+            const relative_x = x - y;
+            const relative_v = x_dot - y_dot;
 
-            if(engineMode !== 'single') {
-                document.getElementById('w-stage2').classList.remove('hidden');
-                const w3 = getWeight(parseInt(document.getElementById('z3').value) || 0);
-                const w4 = getWeight(parseInt(document.getElementById('z4').value) || 0);
-                document.getElementById('w-z3').innerText = w3.toFixed(2) + " kg";
-                document.getElementById('w-z4').innerText = w4.toFixed(2) + " kg";
-                total += (w3 + w4);
-            } else {
-                document.getElementById('w-stage2').classList.add('hidden');
-            }
-
-            document.getElementById('w-total').innerText = total.toFixed(2) + " kg";
-            document.getElementById('weight-display').classList.remove('hidden');
+            const x_ddot = (-c * relative_v - k * relative_x) / m;
+            return [x_dot, x_ddot];
         }
 
+        function rk4Step() {
+            let k1 = derivatives(t, state);
+            
+            let stateK2 = [state[0] + 0.5 * dt * k1[0], state[1] + 0.5 * dt * k1[1]];
+            let k2 = derivatives(t + 0.5 * dt, stateK2);
+            
+            let stateK3 = [state[0] + 0.5 * dt * k2[0], state[1] + 0.5 * dt * k2[1]];
+            let k3 = derivatives(t + 0.5 * dt, stateK3);
+            
+            let stateK4 = [state[0] + dt * k3[0], state[1] + dt * k3[1]];
+            let k4 = derivatives(t + dt, stateK4);
+
+            state[0] += (dt / 6) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+            state[1] += (dt / 6) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+            t += dt;
+        }
+
+        // --- Core Application Loop ---
         function animate() {
             requestAnimationFrame(animate);
-            if (isAnimating && activeGears.length > 0) {
-                const baseDelta = 0.008;
-                activeGears.forEach(gear => {
-                    gear.obj.rotation.z += baseDelta * gear.speed;
-                    if(gear.shaft) gear.shaft.rotation.y = gear.obj.rotation.z;
 
-                    if (gear.targetMeshX !== null) {
-                        gear.teeth.forEach(tooth => {
-                            const worldAngle = tooth.baseAngle + gear.obj.rotation.z;
-                            const tx = gear.globalX + Math.cos(worldAngle) * ((gear.z * gear.m) / 2);
-                            const tz = gear.globalZ + Math.sin(worldAngle) * ((gear.z * gear.m) / 2);
-                            const distance = Math.sqrt(Math.pow(tx - gear.targetMeshX, 2) + Math.pow(tz - 0, 2));
-                            
-                            const posAttr = tooth.geometry.attributes.position;
-                            const colAttr = tooth.geometry.attributes.color;
-                            const baseColor = new THREE.Color(gear.baseBodyColor);
-                            const stressColor = new THREE.Color(0xef4444);
+            // Compute Base Position profile
+            const basePos = Y * Math.sin(omega * t);
 
-                            if (distance < (gear.m * 1.5)) {
-                                for (let j = 0; j < posAttr.count; j++) {
-                                    const localY = posAttr.getY(j);
-                                    const weight = Math.min(1, Math.max(0, localY / (2.25 * gear.m)));
-                                    const blended = baseColor.clone().lerp(stressColor, weight * 0.85);
-                                    colAttr.setXYZ(j, blended.r, blended.g, blended.b);
-                                }
-                            } else {
-                                for (let j = 0; j < posAttr.count; j++) {
-                                    colAttr.setXYZ(j, baseColor.r, baseColor.g, baseColor.b);
-                                }
-                            }
-                            colAttr.needsUpdate = true;
-                        });
+            if (!hasFailed) {
+                // Step forward using numerical integration
+                rk4Step();
+
+                // Structural Strain Energy Evaluation: U = 0.5 * k * (x - y)^2
+                const relativeExtension = state[0] - basePos;
+                const instantEnergy = 0.5 * k * Math.pow(relativeExtension, 2);
+                const springForce = k * relativeExtension;
+
+                // Update UI diagnostics metrics
+                document.getElementById('diagDeflection').textContent = `${relativeExtension.toFixed(3)} m`;
+                document.getElementById('diagForce').textContent = `${springForce.toFixed(2)} N`;
+                document.getElementById('diagEnergy').textContent = `${instantEnergy.toFixed(2)} J`;
+
+                // Damage Accumulation Logic (Fatigue Core)
+                if (instantEnergy > strainEnergyLimit) {
+                    // Accumulate damage proportional to excess stress over the limit
+                    const excess = instantEnergy - strainEnergyLimit;
+                    cumulativeDamage += excess * dt * 8.5; // Acceleration factor scaling
+                }
+
+                const integrity = Math.max(0, 100 - (cumulativeDamage / damageThreshold) * 100);
+                fatigueProgressBar.style.width = `${100 - integrity}%`;
+                integrityPercent.textContent = `${Math.ceil(integrity)}%`;
+
+                // CRITICAL INTERCEPT: Trigger Structural Fatigue Failure
+                if (cumulativeDamage >= damageThreshold) {
+                    hasFailed = true;
+                    failureTime = t;
+                    triggerCatastrophicFailure();
+                }
+
+                // Transform Three.js Actor Position Transformations
+                baseMesh.position.y = basePos;
+                massMesh.position.y = 2.5 + state[0];
+                
+                // Adjust geometry scaling vector dynamically based on total real-time length
+                const springCurrentLength = (2.5 + state[0]) - basePos;
+                generateSpringGeometry(springCurrentLength, false);
+                springMesh.position.y = basePos;
+
+                // Sync UI telemetry arrays
+                chartDataPoints.push({ x: state[0], y: state[1] });
+                if (chartDataPoints.length > maxChartDataPoints) chartDataPoints.shift();
+
+            } else {
+                // POST FAILURE STATE SPACE ACTION
+                if (!solutionApplied) {
+                    // Gravity acts freely on the severed mass bobble head
+                    state[1] += -9.81 * dt; // Simple freefall acceleration integration
+                    state[0] += state[1] * dt;
+
+                    // Floor Collision
+                    if (state[0] < -2.4) {
+                        state[0] = -2.4;
+                        state[1] *= -0.4; // Kinetic coefficient restitution damping bounce
                     }
-                });
+                    massMesh.position.y = 2.5 + state[0];
+                } else {
+                    // RUNNING STABLE POST-SOLUTION PRE-STRESS CONDITION
+                    rk4Step();
+                    baseMesh.position.y = basePos;
+                    massMesh.position.y = 2.5 + state[0];
+                    const springCurrentLength = (2.5 + state[0]) - basePos;
+                    generateSpringGeometry(springCurrentLength, false);
+                    springMesh.position.y = basePos;
+
+                    chartDataPoints.push({ x: state[0], y: state[1] });
+                    if (chartDataPoints.length > maxChartDataPoints) chartDataPoints.shift();
+                }
             }
-            if(controls) controls.update();
-            if(renderer) renderer.render(scene, camera);
+
+            // Sync Core UI Elements
+            globalTimer.textContent = `Simulation Time: ${t.toFixed(2)}s`;
+            
+            // Re-render Graph Canvas
+            chart.data.datasets[0].data = chartDataPoints;
+            chart.update('none');
+
+            renderer.render(scene, camera);
         }
+
+        // --- Catastrophic Breakdown Intercept Handler ---
+        function triggerCatastrophicFailure() {
+            statusIndicator.className = "w-3 h-3 rounded-full bg-rose-500 animate-ping";
+            document.getElementById('commentaryCard').className = "glassmorphic p-5 rounded-xl flex-1 flex flex-col border-rose-500/40 bg-rose-950/10";
+            solutionBtn.disabled = false;
+
+            logToTerminal(`⚠️ FATIGUE FAILURE ATTAINED!`, "text-rose-500 font-bold");
+            logToTerminal(`Fracture Timeline Event: ${failureTime.toFixed(2)} seconds.`, "text-rose-400");
+            logToTerminal(`Root Cause Analysis: Cyclic local stress exceeded the ultimate elastic limit. Cumulative micro-cracks achieved structural instability.`, "text-slate-300");
+            logToTerminal(`💡 Engineering Solution Recommendation: Apply structural Shot Peening to inject residual compressive stress fields or choose high-yield Chrome Vanadium (AISI 6150) steel wire alloy.`, "text-amber-400");
+            
+            // Break 3D geometry linkages
+            const basePos = Y * Math.sin(omega * t);
+            const finalLength = (2.5 + state[0]) - basePos;
+            generateSpringGeometry(finalLength, true);
+            if (springMesh) springMesh.position.y = basePos;
+        }
+
+        // --- engineering Fix Action Handler ---
+        solutionBtn.addEventListener('click', () => {
+            solutionApplied = true;
+            hasFailed = false;
+            cumulativeDamage = 0.0;
+            
+            // Re-engineer the structural limits (Apply fix logic modifications)
+            k = 300.0; // Upregulate structural stiffness configuration
+            c = 0.9;   // Upregulate mechanical system damping to suppress resonance amplification
+            
+            stiffInput.value = 300;
+            dampInput.value = 0.9;
+            updateParameters();
+
+            statusIndicator.className = "w-3 h-3 rounded-full bg-cyan-500";
+            document.getElementById('commentaryCard').className = "glassmorphic p-5 rounded-xl flex-1 flex flex-col border-cyan-500/40 bg-cyan-950/10";
+            solutionBtn.disabled = true;
+
+            // Reset kinematic state coordinates safely to clean equilibrium envelope
+            state = [0.0, 0.0];
+            
+            logToTerminal(`🔧 ENGINEERING FIX DEPLOYED SUCCESSFULLY.`, "text-cyan-400 font-bold");
+            logToTerminal(`Material swapped to Chrome Vanadium Spring Steel. Wire configuration updated with structural shot-peening treatments. Damping factor upscaled to 0.9 Ns/m to actively break mechanical resonance energy loops.`, "text-slate-300");
+        });
+
+        // --- Master Global System Reset Functionality ---
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            t = 0.0;
+            state = [0.0, 0.0];
+            cumulativeDamage = 0.0;
+            hasFailed = false;
+            solutionApplied = false;
+            failureTime = null;
+            chartDataPoints = [];
+
+            statusIndicator.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+            document.getElementById('commentaryCard').className = "glassmorphic p-5 rounded-xl flex-1 flex flex-col border-slate-800";
+            fatigueProgressBar.style.width = "0%";
+            integrityPercent.textContent = "100%";
+            solutionBtn.disabled = true;
+
+            updateParameters();
+            logTerminal.innerHTML = `<p class="text-emerald-400">[SYSTEM INFO] Reset complete. Simulation parameters re-initialized.</p>`;
+            
+            generateSpringGeometry(2.5, false);
+        });
+
+        // Initialize Application Suite Contexts on Launch
+        updateParameters();
+        initThreeJS();
+        initChart();
+        animate();
+
     </script>
 </body>
 </html>

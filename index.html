@@ -305,13 +305,14 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-            const light1 = new THREE.DirectionalLight(0xffffff, 0.85);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            
+            const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
             light1.position.set(50, 180, 70);
             scene.add(light1);
             
-            const light2 = new THREE.DirectionalLight(0x38bdf8, 0.4);
-            light2.position.set(-60, -100, -50);
+            const light2 = new THREE.DirectionalLight(0xffffff, 1.2);
+            light2.position.set(-60, -120, -80);
             scene.add(light2);
 
             gearGroup = new THREE.Group();
@@ -513,8 +514,8 @@
             }
 
             const castCasingMat = new THREE.MeshPhysicalMaterial({
-                color: 0x38bdf8, transparent: true, opacity: 0.22, roughness: 0.2,
-                metalness: 0.8, transmission: 0.6, ior: 1.5, side: THREE.DoubleSide, depthWrite: true
+                color: 0xffffff, transparent: true, opacity: 0.15, roughness: 0.4,
+                metalness: 0.1, transmission: 0.85, ior: 1.4, side: THREE.DoubleSide, depthWrite: false
             });
 
             const solidMetalMat = new THREE.MeshStandardMaterial({

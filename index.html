@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <title>Dancing Dashboard Toy Simulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js CDN -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Three.js CDN -->
+  <!-- Three.js -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-  <!-- GSAP CDN -->
+  <!-- GSAP -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
   <style>
     body {
@@ -35,6 +35,10 @@
     .resonance {
       color: #ff4d4d;
       font-weight: bold;
+    }
+    #simContainer canvas {
+      width: 100% !important;
+      height: 100% !important;
     }
   </style>
 </head>
@@ -111,7 +115,11 @@
       controls.forEach(id => {
         const el = document.getElementById(id);
         el.addEventListener('input', () => {
-          window[id === 'mass' ? 'm' : id === 'stiffness' ? 'k' : id === 'damping' ? 'c' : id === 'frequency' ? 'omega' : 'F0'] = parseFloat(el.value);
+          if(id==='mass') m=parseFloat(el.value);
+          else if(id==='stiffness') k=parseFloat(el.value);
+          else if(id==='damping') c=parseFloat(el.value);
+          else if(id==='frequency') omega=parseFloat(el.value);
+          else if(id==='force') F0=parseFloat(el.value);
           document.getElementById(id+'Val').textContent = el.value;
           updateMetrics();
           updateCharts();
@@ -123,7 +131,7 @@
     let scene, camera, renderer, spring, head;
     function init3D() {
       scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+      camera = new THREE.PerspectiveCamera(45, 400/400, 0.1, 1000);
       renderer = new THREE.WebGLRenderer({antialias:true});
       renderer.setSize(400,400);
       document.getElementById('simContainer').appendChild(renderer.domElement);
@@ -169,9 +177,4 @@
       freqChart = new Chart(document.getElementById('freqChart'), {
         type: 'line',
         data: {labels:[], datasets:[{label:'Amplitude', data:[], borderColor:'#00ffcc'}]},
-        options: {responsive:true}
-      });
-      timeChart = new Chart(document.getElementById('timeChart'), {
-        type: 'line',
-        data: {labels:[], datasets:[{label:'Displacement', data:[], borderColor:'#ffcc00'}]},
-        options: {
+        options: {responsive:true

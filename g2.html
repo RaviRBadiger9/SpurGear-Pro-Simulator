@@ -2,7 +2,183 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scal<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dancing Dashboard Toy Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Three.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+  <!-- GSAP CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top left, #0f0f0f, #1a1a1a);
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+    }
+    canvas {
+      display: block;
+    }
+    .metric {
+      font-size: 1.1rem;
+      margin: 0.5rem 0;
+    }
+    .resonance {
+      color: #ff4d4d;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="p-6">
+  <h1 class="text-3xl font-bold text-center mb-6">Dancing Dashboard Toy Simulator</h1>
+  
+  <div class="grid grid-cols-3 gap-6">
+    <!-- Control Panel -->
+    <div class="glass col-span-1">
+      <h2 class="text-xl font-semibold mb-4">Control Panel</h2>
+      <label>Mass (kg): <input id="mass" type="range" min="0.1" max="5" step="0.1" value="1"></label>
+      <span id="massVal">1</span><br>
+      <label>Spring Stiffness (N/m): <input id="stiffness" type="range" min="10" max="500" step="10" value="100"></label>
+      <span id="stiffnessVal">100</span><br>
+      <label>Damping (Ns/m): <input id="damping" type="range" min="0" max="20" step="0.5" value="2"></label>
+      <span id="dampingVal">2</span><br>
+      <label>Input Frequency (rad/s): <input id="frequency" type="range" min="0.1" max="20" step="0.1" value="5"></label>
+      <span id="frequencyVal">5</span><br>
+      <label>Force Amplitude (N): <input id="force" type="range" min="0" max="50" step="1" value="10"></label>
+      <span id="forceVal">10</span>
+    </div>
+
+    <!-- 3D Simulation -->
+    <div class="glass col-span-1">
+      <h2 class="text-xl font-semibold mb-4">3D Simulation</h2>
+      <div id="simContainer" style="width:100%; height:400px;"></div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="glass col-span-1">
+      <h2 class="text-xl font-semibold mb-4">Metrics</h2>
+      <div class="metric">Natural Frequency: <span id="fn"></span> Hz</div>
+      <div class="metric">Amplitude Response: <span id="amp"></span> m</div>
+      <div class="metric resonance" id="resStatus"></div>
+      <div class="metric" id="hint"></div>
+    </div>
+  </div>
+
+  <!-- Graphs -->
+  <div class="grid grid-cols-2 gap-6 mt-6">
+    <div class="glass">
+      <h2 class="text-xl font-semibold mb-4">Frequency Response</h2>
+      <canvas id="freqChart"></canvas>
+    </div>
+    <div class="glass">
+      <h2 class="text-xl font-semibold mb-4">Time Response</h2>
+      <canvas id="timeChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // Physics parameters
+    let m = 1, k = 100, c = 2, F0 = 10, omega = 5;
+    let time = 0;
+
+    // Metrics calculation
+    function updateMetrics() {
+      const fn = (1 / (2 * Math.PI)) * Math.sqrt(k / m);
+      const X = F0 / Math.sqrt(Math.pow(k - m * omega * omega, 2) + Math.pow(c * omega, 2));
+      document.getElementById('fn').textContent = fn.toFixed(2);
+      document.getElementById('amp').textContent = X.toFixed(3);
+      if (Math.abs(omega - 2 * Math.PI * fn) < 0.5) {
+        document.getElementById('resStatus').textContent = "Near Resonance!";
+        document.getElementById('hint').textContent = "⚠️ System unstable, amplitude rising.";
+      } else {
+        document.getElementById('resStatus').textContent = "";
+        document.getElementById('hint').textContent = "System stable.";
+      }
+    }
+
+    // Control panel bindings
+    function bindControls() {
+      const controls = ['mass','stiffness','damping','frequency','force'];
+      controls.forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', () => {
+          window[id === 'mass' ? 'm' : id === 'stiffness' ? 'k' : id === 'damping' ? 'c' : id === 'frequency' ? 'omega' : 'F0'] = parseFloat(el.value);
+          document.getElementById(id+'Val').textContent = el.value;
+          updateMetrics();
+          updateCharts();
+        });
+      });
+    }
+
+    // Three.js simulation
+    let scene, camera, renderer, spring, head;
+    function init3D() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({antialias:true});
+      renderer.setSize(400,400);
+      document.getElementById('simContainer').appendChild(renderer.domElement);
+
+      const light = new THREE.DirectionalLight(0xffffff,1);
+      light.position.set(5,5,5);
+      scene.add(light);
+      scene.add(new THREE.AmbientLight(0x404040));
+
+      const baseGeo = new THREE.BoxGeometry(2,0.2,2);
+      const baseMat = new THREE.MeshStandardMaterial({color:0x333333});
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      scene.add(base);
+
+      const springGeo = new THREE.CylinderGeometry(0.05,0.05,2,32,32,true);
+      const springMat = new THREE.MeshStandardMaterial({color:0x00ffcc, wireframe:true});
+      spring = new THREE.Mesh(springGeo, springMat);
+      spring.position.y = 1;
+      scene.add(spring);
+
+      const headGeo = new THREE.SphereGeometry(0.3,32,32);
+      const headMat = new THREE.MeshStandardMaterial({color:0xffcc00});
+      head = new THREE.Mesh(headGeo, headMat);
+      head.position.y = 2.2;
+      scene.add(head);
+
+      camera.position.z = 5;
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      const X = F0 / Math.sqrt(Math.pow(k - m * omega * omega, 2) + Math.pow(c * omega, 2));
+      const displacement = X * Math.sin(omega * time);
+      head.position.y = 2.2 + displacement;
+      spring.scale.y = 1 + displacement * 0.5;
+      renderer.render(scene, camera);
+      time += 0.02;
+    }
+
+    // Charts
+    let freqChart, timeChart;
+    function initCharts() {
+      freqChart = new Chart(document.getElementById('freqChart'), {
+        type: 'line',
+        data: {labels:[], datasets:[{label:'Amplitude', data:[], borderColor:'#00ffcc'}]},
+        options: {responsive:true}
+      });
+      timeChart = new Chart(document.getElementById('timeChart'), {
+        type: 'line',
+        data: {labels:[], datasets:[{label:'Displacement', data:[], borderColor:'#ffcc00'}]},
+        options: {e=1.0">
     <title>SpurGear Pro | Engineering Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
